@@ -1,0 +1,60 @@
+/* Stäy theme: warm white surfaces, soft beige chrome, muted brown accent. */
+:root {
+  --radius: 0.5rem;
+  --font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
+
+  --brand: oklch(0.8 0.041 59.7);
+  --brand-hover: #98603d;
+  --brand-dark: #8f5e3a;
+  --brand-soft: oklch(0.7 0.045 59.7);
+  --brand-tint: #f7efe8;
+  --brand-wash: #fbf9f9;
+  --brand-ink: oklch(0.322 0.004 286.2);
+
+  --background: #fbf9f9;
+  --foreground: #24211f;
+  --card: #ffffff;
+  --card-foreground: #24211f;
+  --popover: #ffffff;
+  --popover-foreground: #24211f;
+  --header: #fafaf8;
+
+  --primary: var(--brand-hover);
+  --primary-foreground: #ffffff;
+  --secondary: var(--brand-wash);
+  --secondary-foreground: #6f6964;
+  --muted: #eee9e4;
+  --muted-foreground: #6f6964;
+  --accent: var(--brand-tint);
+  --accent-foreground: #24211f;
+  --destructive: #c64b4b;
+  --destructive-foreground: #ffffff;
+  --border: #e8e2dc;
+  --input: #e3ddd7;
+  --switch-off: #ddd7d1;
+  --placeholder: #a39c96;
+  --ring: var(--brand-hover);
+
+  --success: #16845b;
+  --success-soft: #edf8f3;
+  --warning: #b7791f;
+  --warning-soft: #fdf4e6;
+  --danger: #c64b4b;
+  --danger-soft: #fbeeee;
+
+  --chart-1: var(--brand-hover);
+  --chart-2: oklch(0.55 0.035 250);
+  --chart-3: oklch(0.68 0.03 250);
+  --chart-4: oklch(0.79 0.022 250);
+  --chart-5: oklch(0.87 0.015 250);
+
+  --sidebar: #f8f4f1;
+  --sidebar-foreground: #24211f;
+  --sidebar-primary: var(--brand-hover);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #efe6e0;
+  --sidebar-accent-foreground: #24211f;
+  --sidebar-border: #ebe4de;
+  --sidebar-ring: var(--brand-hover);
+}

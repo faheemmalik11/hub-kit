@@ -48,3 +48,4 @@ export type { OverviewPageProps, OverviewWidget } from "./overview/overview-page
 export { englishOverviewLabels } from "./overview/labels";
 export type { OverviewLabels } from "./overview/labels";
 export * from "./invoice-detail";
+export * from "./invoice-list";

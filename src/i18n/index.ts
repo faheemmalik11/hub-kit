@@ -11,3 +11,4 @@ export { englishFileNamingLabels } from "../pages/file-naming/labels";
 export { englishReminderDialogLabels } from "../components/notifications/reminder-dialog";
 export { englishErrorStateLabels, englishPaginationLabels } from "../components/feedback";
 export { englishFormatters } from "../lib/formatters";
+export { englishOverviewLabels } from "../pages/overview/labels";

@@ -68,4 +68,7 @@ export { ReviewCard } from "./ReviewCard";
 export type { ReviewCardLabels } from "./ReviewCard";
 
 export { englishInvoiceDetailLabels } from "./labels";
-export type { InvoiceDetailLabels } from "./labels";
+export type { InvoiceDetailLabels, InvoiceDetailPageLabels } from "./labels";
+
+export { InvoiceDetailPage } from "./InvoiceDetailPage";
+export type { InvoiceDetailPageProps } from "./InvoiceDetailPage";

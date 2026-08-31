@@ -45,6 +45,15 @@ The adapter interfaces are in `@wt/hub-kit/adapters`. Query hooks return a plain
 mutations are plain functions returning promises, so the project wraps its own writes
 and cache invalidation.
 
+## Set up a new project
+
+```bash
+npx hub-kit init
+```
+
+This creates `hub.config.mjs`, `src/hub/registry.tsx` and a starter adapter, then prints
+the two CSS lines to add. Nothing is overwritten if the files already exist.
+
 ## Generate route files
 
 `hub.config.mjs` in the project root names the enabled pages:

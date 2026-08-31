@@ -49,3 +49,8 @@ export { englishOverviewLabels } from "./overview/labels";
 export type { OverviewLabels } from "./overview/labels";
 export * from "./invoice-detail";
 export * from "./invoice-list";
+export * from "./supplier-detail";
+export * from "./bank-transactions";
+export * from "./bank-accounts";
+export * from "./bank-import";
+export * from "./bank-sync-log";

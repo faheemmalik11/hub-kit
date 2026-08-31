@@ -1,0 +1,98 @@
+HUB KIT - SETUP STEPS FOR A NEW PROJECT
+=======================================
+
+Do these steps once per project. After that, updating the kit
+is a single command (see step 8).
+
+
+STEP 1 - INSTALL THE KIT
+------------------------
+From the new project folder:
+
+    npm install git+ssh://git@github.com/faheemmalik11/hub-kit.git#master
+
+To pin an exact version instead of the branch tip, use a git tag,
+for example #v0.1.0.
+
+
+STEP 2 - INSTALL THE PEER DEPENDENCIES
+--------------------------------------
+The kit expects these in the project. Skip any you already have:
+
+    npm install react react-dom @tanstack/react-router lucide-react sonner
+
+Minimum versions: react 19, @tanstack/react-router 1.100,
+lucide-react 0.400, sonner 2.
+
+
+STEP 3 - SCAFFOLD THE HUB FILES
+-------------------------------
+    npx hub-kit init
+
+This creates three files (it never overwrites existing ones):
+
+    hub.config.mjs                     - lists the enabled pages and their URL paths
+    src/hub/registry.tsx               - binds each kit page to its adapter
+    src/hub/adapters/processing-log.ts - starter adapter stub
+
+
+STEP 4 - WIRE UP THE THEME
+--------------------------
+Add these two lines to the project's main CSS file:
+
+    @import "@wt/hub-kit/themes/staey.css";
+    @source "../node_modules/@wt/hub-kit/dist";
+
+The @source line makes Tailwind scan the kit's files so its CSS
+classes get generated. For a different brand, copy staey.css,
+change the tokens (see themes/TOKENS.md in the kit), and import
+your copy instead.
+
+
+STEP 5 - IMPLEMENT THE ADAPTERS
+-------------------------------
+Open src/hub/adapters/processing-log.ts and implement each member
+with the project's data layer (for example React Query + Supabase).
+TypeScript lists exactly what is missing.
+
+Each page you enable later gets its own adapter file the same way.
+All adapter interfaces come from "@wt/hub-kit/adapters".
+
+
+STEP 6 - CHOOSE PAGES AND PATHS
+-------------------------------
+Edit hub.config.mjs. Add one entry per page you want, with the
+URL path in the project's own language:
+
+    export default {
+      registryImport: "@/hub/registry",
+      pages: [
+        { component: "ActivityLogPage", path: "/protokoll" },
+        { component: "NotificationsPage", path: "/benachrichtigungen" },
+      ],
+    };
+
+Bind each component name in src/hub/registry.tsx, passing its
+adapter and, if wanted, the project's own labels (English works
+without any labels).
+
+
+STEP 7 - GENERATE THE ROUTES
+----------------------------
+    npx hub-kit sync
+
+This writes one route file per page into src/routes.
+Run it again whenever you change the page list in hub.config.mjs.
+
+
+STEP 8 - UPDATING THE KIT LATER
+-------------------------------
+When someone pushes a new kit version to GitHub, the project
+only runs:
+
+    npm update @wt/hub-kit
+
+Nothing else changes. Adapters, theme, registry and routes stay
+as they are. Only a brand-new page needs new work: one adapter,
+one line in hub.config.mjs, one registry binding, then
+npx hub-kit sync.

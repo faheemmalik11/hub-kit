@@ -6,12 +6,77 @@ import { OutgoingInvoiceLabels } from "./OutgoingInvoiceFlag";
 import { ReviewLabels, ReviewReasonId } from "./review";
 import { HistoryLabels } from "./history";
 
+export interface InvoiceDetailPageLabels {
+  backToList: string;
+  notFoundTitle: string;
+  notFoundBody: (id: string) => string;
+  noInvoiceNumber: string;
+  tabOverview: string;
+  tabApproval: string;
+  tabPayment: string;
+  tabDetails: string;
+  tabHistory: string;
+  edit: string;
+  save: string;
+  cancel: string;
+  saving: string;
+  saved: string;
+  saveFailed: (error: string) => string;
+  fieldIssuer: string;
+  fieldInvoiceNumber: string;
+  fieldOrderNumber: string;
+  fieldDocumentDate: string;
+  fieldDueDate: string;
+  fieldServiceDate: string;
+  fieldAmountNet: string;
+  fieldVatRate: string;
+  fieldVatAmount: string;
+  fieldAmountGross: string;
+  fieldCurrency: string;
+  fieldCompany: string;
+  fieldProperty: string;
+  fieldCategory: string;
+  fieldRecipientName: string;
+  fieldCustomerNumber: string;
+  fieldPaymentReference: string;
+  fieldPaymentMethod: string;
+  fieldTaxNote: string;
+  fieldServiceDescription: string;
+  unsavedTitle: string;
+  unsavedBody: (fields: string) => string;
+  unsavedDiscard: string;
+  unsavedKeepEditing: string;
+  addNotePlaceholder: string;
+  addNoteButton: string;
+  noteAdded: string;
+  deleteButton: string;
+  deleteDialogTitle: string;
+  deleteDialogDescription: string;
+  deleteReasonPlaceholder: string;
+  deleteConfirm: string;
+  deletedToast: string;
+  archiveButton: string;
+  unarchiveButton: string;
+  archivedBanner: (date: string) => string;
+  markPaid: string;
+  markUnpaid: string;
+  paidToast: string;
+  payableAccount: string;
+  noPayableAccount: string;
+  approvalComment: string;
+  approvalCommentPlaceholder: string;
+  runAction: string;
+  noActionsAvailable: string;
+  openSupplier: string;
+}
+
 export interface InvoiceDetailLabels {
   review: ReviewBadgeLabels & ReviewCardLabels & ReviewLabels;
   workflowLadder: WorkflowLadderLabels;
   workflowHistory: WorkflowHistoryLabels;
   outgoing: OutgoingInvoiceLabels;
   history: HistoryLabels;
+  page: InvoiceDetailPageLabels;
 }
 
 const DURATION_UNIT_WORD: Record<"minuten" | "stunden" | "tage", string> = {
@@ -95,5 +160,68 @@ export const englishInvoiceDetailLabels: InvoiceDetailLabels = {
     stateLabel: (targetStatus) => targetStatus,
     corrected: "Manually corrected",
     queryAdditional: "Sent back with a query",
+  },
+  page: {
+    backToList: "Back to invoices",
+    notFoundTitle: "Invoice not found",
+    notFoundBody: (id) => `No invoice matches "${id}".`,
+    noInvoiceNumber: "No invoice number",
+    tabOverview: "Overview",
+    tabApproval: "Approval",
+    tabPayment: "Payment",
+    tabDetails: "Details",
+    tabHistory: "History",
+    edit: "Edit",
+    save: "Save",
+    cancel: "Cancel",
+    saving: "Saving…",
+    saved: "Saved.",
+    saveFailed: (error) => `Save failed: ${error}`,
+    fieldIssuer: "Issuer",
+    fieldInvoiceNumber: "Invoice number",
+    fieldOrderNumber: "Order number",
+    fieldDocumentDate: "Document date",
+    fieldDueDate: "Due date",
+    fieldServiceDate: "Service date",
+    fieldAmountNet: "Net amount",
+    fieldVatRate: "VAT rate",
+    fieldVatAmount: "VAT amount",
+    fieldAmountGross: "Gross amount",
+    fieldCurrency: "Currency",
+    fieldCompany: "Company",
+    fieldProperty: "Property",
+    fieldCategory: "Category",
+    fieldRecipientName: "Recipient",
+    fieldCustomerNumber: "Customer number",
+    fieldPaymentReference: "Payment reference",
+    fieldPaymentMethod: "Payment method",
+    fieldTaxNote: "Tax note",
+    fieldServiceDescription: "Service description",
+    unsavedTitle: "Unsaved changes",
+    unsavedBody: (fields) => `You have unsaved changes to: ${fields}. Discard them?`,
+    unsavedDiscard: "Discard",
+    unsavedKeepEditing: "Keep editing",
+    addNotePlaceholder: "Add a note…",
+    addNoteButton: "Add note",
+    noteAdded: "Note added.",
+    deleteButton: "Delete",
+    deleteDialogTitle: "Delete this invoice?",
+    deleteDialogDescription: "This moves the invoice to trash. It can be restored later.",
+    deleteReasonPlaceholder: "Reason (optional)",
+    deleteConfirm: "Delete",
+    deletedToast: "Invoice deleted.",
+    archiveButton: "Archive",
+    unarchiveButton: "Restore from archive",
+    archivedBanner: (date) => `Archived on ${date}.`,
+    markPaid: "Mark as paid",
+    markUnpaid: "Mark as unpaid",
+    paidToast: "Payment status updated.",
+    payableAccount: "Payable account",
+    noPayableAccount: "No payable account on file.",
+    approvalComment: "Comment",
+    approvalCommentPlaceholder: "Add a comment (optional)…",
+    runAction: "Confirm",
+    noActionsAvailable: "No approval action is available right now.",
+    openSupplier: "View supplier",
   },
 };

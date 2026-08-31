@@ -87,3 +87,18 @@ export type {
   InvoiceQueueCardConfig,
   InvoiceListConfig,
 } from "./invoice-list";
+export type {
+  SupplierRecord,
+  SupplierBankAccountRecord,
+  SupplierInvoiceRow,
+  NewSupplierBankAccount,
+  SupplierDetailAdapter,
+} from "./supplier-detail";
+export type {
+  BankAccountRecord,
+  BankTransactionRecord,
+  BankMatchCandidate,
+  BankInvoiceSearchResult,
+  BankReconciliationAdapter,
+} from "./bank-reconciliation";
+export type { SyncLogRow, SyncLogFilter, SyncLogAdapter } from "./bank-sync-log";

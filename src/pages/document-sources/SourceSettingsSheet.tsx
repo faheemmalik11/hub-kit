@@ -20,10 +20,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../../ui/collapsible";
-import { Combobox } from "../../ui/combobox";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { MultiCombobox } from "../../ui/multi-combobox";
+import { TreePicker } from "../../ui/tree-picker";
 import {
   Select,
   SelectContent,
@@ -178,8 +178,8 @@ function SheetBody({
 
   return (
     <>
-      <SheetHeader className="border-b border-border pb-4">
-        <div className="flex items-center gap-3">
+      <SheetHeader className="border-b border-border pb-4 text-left">
+        <div className="flex items-start gap-3">
           <SourceIconBadge icon={source.icon} className="size-12" />
           <div className="min-w-0">
             <SheetTitle className="truncate text-left">
@@ -188,16 +188,16 @@ function SheetBody({
             <SheetDescription className="truncate text-left">
               {source.detail}
             </SheetDescription>
-            <div className="mt-1">
+            <div className="mt-1.5">
               <StatusChip status={source.status} labels={labels} />
             </div>
+            {source.lastChangedBy && (
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {labels.sheet.lastChangedBy(source.lastChangedBy)}
+              </p>
+            )}
           </div>
         </div>
-        {source.lastChangedBy && (
-          <p className="text-xs text-muted-foreground">
-            {labels.sheet.lastChangedBy(source.lastChangedBy)}
-          </p>
-        )}
       </SheetHeader>
 
       <div className="flex gap-4 border-b border-border">
@@ -247,7 +247,7 @@ function SheetBody({
         )}
       </div>
 
-      <SheetFooter className="mt-auto flex-col gap-2 border-t border-border pt-4">
+      <SheetFooter className="sticky bottom-0 mt-auto flex-col gap-2 border-t border-border bg-popover pb-1 pt-4">
         {saveError && (
           <p className="text-sm text-destructive">{labels.sheet.saveFailed}</p>
         )}
@@ -301,9 +301,13 @@ function FieldRow({
     return (
       <div className="flex items-center justify-between gap-4 py-4 first:pt-5">
         <div className="min-w-0">
-          <Label className="text-sm font-semibold text-foreground">{field.label}</Label>
+          <Label className="text-sm font-semibold text-foreground">
+            {field.label}
+          </Label>
           {field.description && (
-            <p className="mt-0.5 text-sm text-muted-foreground">{field.description}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {field.description}
+            </p>
           )}
         </div>
         <Switch checked={value === true} onCheckedChange={onChange} />
@@ -404,6 +408,22 @@ function FieldControl({
         </Select>
       );
     case "multiSelect":
+      if (hasNestedOptions(field.options)) {
+        return (
+          <TreePicker
+            nodes={treeNodes(
+              field.options,
+              selectedIds,
+              field.optionsLoading === true,
+            )}
+            values={selectedIds}
+            onChange={onChange}
+            multi
+            placeholder={placeholder}
+            disabled={field.optionsLoading}
+          />
+        );
+      }
       return (
         <MultiCombobox
           values={selectedIds}
@@ -415,10 +435,15 @@ function FieldControl({
       );
     case "treeSelect":
       return (
-        <Combobox
-          value={typeof value === "string" && value !== "" ? value : NONE_VALUE}
-          onValueChange={(next) => onChange(next === NONE_VALUE ? null : next)}
-          options={[{ value: NONE_VALUE, label: noneLabel }, ...options]}
+        <TreePicker
+          nodes={treeNodes(
+            field.options,
+            selectedIds,
+            field.optionsLoading === true,
+          )}
+          values={selectedIds}
+          onChange={(next) => onChange(next[0] ?? null)}
+          multi={false}
           placeholder={placeholder}
           disabled={field.optionsLoading}
         />
@@ -474,4 +499,30 @@ function flattenTree(
     }
     return [{ value: option.value, label: option.label, depth }, ...children];
   });
+}
+
+function hasNestedOptions(options: FieldOption[] | undefined): boolean {
+  return (options ?? []).some((option) => (option.children ?? []).length > 0);
+}
+
+function treeNodes(
+  options: FieldOption[] | undefined,
+  selectedIds: string[],
+  loading: boolean,
+): FieldOption[] {
+  const known = new Set<string>();
+  const walk = (list: FieldOption[]) => {
+    for (const option of list) {
+      known.add(option.value);
+      walk(option.children ?? []);
+    }
+  };
+  walk(options ?? []);
+  const missing = loading
+    ? []
+    : selectedIds.filter((id) => id && id !== NONE_VALUE && !known.has(id));
+  return [
+    ...(options ?? []),
+    ...missing.map((id) => ({ value: id, label: id })),
+  ];
 }

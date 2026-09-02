@@ -21,6 +21,7 @@ export * from "./table";
 export * from "./tabs";
 export * from "./textarea";
 export * from "./tooltip";
+export * from "./tree-picker";
 export * from "./sheet";
 export * from "./calendar";
 export * from "./chart";

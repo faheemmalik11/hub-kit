@@ -89,31 +89,33 @@ export function DocumentSourcesPage({
 
       <div
         data-tour="document-sources-status"
-        className="mt-6 flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4"
+        className="mt-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:flex-wrap sm:items-center"
       >
-        {filing.active ? (
-          <CheckCircle2 className="size-5 shrink-0 text-success" />
-        ) : (
-          <PauseCircle className="size-5 shrink-0 text-warning" />
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-foreground">
-            {filing.active ? labels.filingActive : labels.filingInactive}
-          </p>
-          <p className="text-sm text-muted-foreground">
-            {filing.active
-              ? labels.filingActiveDetail
-              : labels.filingInactiveDetail}
-          </p>
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          {filing.active ? (
+            <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" />
+          ) : (
+            <PauseCircle className="mt-0.5 size-5 shrink-0 text-warning" />
+          )}
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-foreground">
+              {filing.active ? labels.filingActive : labels.filingInactive}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {filing.active
+                ? labels.filingActiveDetail
+                : labels.filingInactiveDetail}
+            </p>
+          </div>
         </div>
         {filing.lastRunLabel && (
-          <div className="text-right">
+          <div className="flex items-baseline gap-2 pl-8 sm:block sm:pl-0 sm:text-right">
             <p className="text-xs text-muted-foreground">{labels.lastRun}</p>
             <p className="text-sm text-foreground">{filing.lastRunLabel}</p>
           </div>
         )}
         {links?.logs && (
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm" className="ml-8 self-start sm:ml-0 sm:self-auto">
             <Link to={links.logs}>{labels.viewLogs}</Link>
           </Button>
         )}

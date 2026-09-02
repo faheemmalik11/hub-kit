@@ -3,7 +3,7 @@
 One package that powers every Hub project. Pages, components and the theme system live
 here; each project supplies its data adapters, its dictionary, and one theme file.
 
-Rules for working in this repo: see `CLAUDE.md`. The full plan: see `PLAN.md`.
+Rules for working in this repo: see `CLAUDE.md`. The full plan: see `docs/plan.md`.
 
 ## Install in a project
 
@@ -53,6 +53,45 @@ npx hub-kit init
 
 This creates `hub.config.mjs`, `src/hub/registry.tsx` and a starter adapter, then prints
 the two CSS lines to add. Nothing is overwritten if the files already exist.
+
+## Add a guided tour
+
+Tours are plain data the project owns. One object per page, keyed by the project's own
+route path:
+
+```tsx
+import { TourProvider, TourButton, type TourDefinition } from "@wt/hub-kit/tour";
+
+const overviewTour: TourDefinition = {
+  id: "overview",
+  steps: [
+    {
+      target: "overview-money-cards",
+      title: "Your figures at a glance",
+      content: [{ kind: "paragraph", text: "Incoming and outgoing invoices for the period." }],
+      showPlaceholderData: true,
+    },
+  ],
+};
+
+<TourProvider tours={{ "/overview": overviewTour }}>
+  <Shell headerActions={<TourButton />} ...rest />
+</TourProvider>
+```
+
+A tour opens by itself the first time a user lands on the page. Once it is skipped or
+finished it never opens by itself again; the Tour button always reopens it. Pages with no
+tour show no button. Target names are listed in `docs/tour-guide.md`.
+
+Steps carry typed content blocks: `paragraph`, `list`, `image`, `video`, `link`,
+`keyValueList` and `callout`. The array order is the order on the card. Styling comes from
+the theme, so a project supplies content only.
+
+A step with `showPlaceholderData` fills an empty page with sample values while the tour is
+open. Sample values come from a separate read-only adapter, so real data is never read
+through or written to.
+
+Full instructions, including the target names each kit page offers: `docs/tour-guide.md`.
 
 ## Generate route files
 

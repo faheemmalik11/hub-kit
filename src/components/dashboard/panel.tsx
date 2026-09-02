@@ -7,20 +7,20 @@ export function DashboardPanel({
   titleExtra,
   headerRight,
   className,
+  dataTour,
   children,
 }: {
   title: string;
   titleExtra?: ReactNode;
   headerRight?: ReactNode;
   className?: string;
+  dataTour?: string;
   children: ReactNode;
 }) {
   return (
     <section
-      className={cn(
-        "flex min-w-0 flex-col rounded-2xl border border-border bg-card p-4",
-        className,
-      )}
+      data-tour={dataTour}
+      className={cn("flex min-w-0 flex-col rounded-2xl bg-brand-wash p-4", className)}
     >
       <div className="flex items-start justify-between gap-2">
         <h2 className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[15px] font-semibold tracking-tight text-foreground">

@@ -3,16 +3,6 @@ import type { LucideIcon } from "lucide-react";
 
 import { cn } from "../../lib/class-names";
 
-export const CHIP = {
-  neutral: "bg-muted text-muted-foreground",
-  brand: "bg-brand-tint text-brand-dark",
-  success: "bg-success-soft text-success",
-  warning: "bg-warning-soft text-warning",
-  danger: "bg-danger-soft text-danger",
-} as const;
-
-export type ChipTone = keyof typeof CHIP;
-
 export function StatTile({
   to,
   search,
@@ -37,7 +27,7 @@ export function StatTile({
       to={to}
       search={search as never}
       className={cn(
-        "flex min-w-0 flex-col justify-center gap-1 rounded-lg px-2 py-1.5 transition-colors hover:bg-brand-wash",
+        "flex min-w-0 flex-col justify-center gap-1 rounded-lg px-2 py-1.5 transition-colors hover:bg-card/70",
         className,
       )}
     >
@@ -45,7 +35,7 @@ export function StatTile({
         {Icon && (
           <span
             className={cn(
-              "inline-flex size-5 shrink-0 items-center justify-center rounded-md",
+              "inline-flex size-5 shrink-0 items-center justify-center rounded-md text-white",
               iconCls,
             )}
           >
@@ -87,11 +77,11 @@ export function StatRow({
     <Link
       to={to}
       search={search as never}
-      className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-brand-wash"
+      className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-card/70"
     >
       <span
         className={cn(
-          "inline-flex size-6 shrink-0 items-center justify-center rounded-md",
+          "inline-flex size-6 shrink-0 items-center justify-center rounded-md text-white",
           iconCls,
         )}
       >

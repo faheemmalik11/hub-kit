@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Skeleton } from "../../ui/skeleton";
 import { cn } from "../../lib/class-names";
 
-const BAR_FILL = "bg-brand-hover";
+const BAR_TINTS = ["bg-chart-1", "bg-chart-2", "bg-chart-3", "bg-chart-4", "bg-chart-5"];
 
 export interface RankedBarRow {
   key: string;
@@ -30,9 +30,9 @@ export function RankedBars({ rows }: { rows: RankedBarRow[] }) {
                   {row.valueText}
                 </span>
               </span>
-              <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-brand-tint">
                 <span
-                  className={cn("block h-full rounded-full", BAR_FILL)}
+                  className={cn("block h-full rounded-full", BAR_TINTS[index % BAR_TINTS.length])}
                   style={{ width: `${Math.min(Math.max(row.sharePct, 2), 100)}%` }}
                 />
               </span>
@@ -49,7 +49,7 @@ export function RankedBars({ rows }: { rows: RankedBarRow[] }) {
                 to={row.link.to}
                 params={row.link.params as never}
                 search={row.link.search as never}
-                className="flex items-center gap-3 rounded-lg px-1 py-0.5 transition-colors hover:bg-brand-wash"
+                className="flex items-center gap-3 rounded-lg px-1 py-0.5 transition-colors hover:bg-brand-tint/50"
               >
                 {body}
               </Link>

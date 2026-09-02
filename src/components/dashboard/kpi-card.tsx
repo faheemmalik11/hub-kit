@@ -29,7 +29,7 @@ export function KpiCard({
   return (
     <div
       className={cn(
-        "relative flex flex-col rounded-xl border border-border bg-card p-3 shadow-xs transition-shadow hover:shadow-md",
+        "relative flex flex-col rounded-xl bg-card p-3 shadow-xs transition-shadow hover:shadow-md",
         className,
       )}
     >
@@ -42,7 +42,7 @@ export function KpiCard({
         <span className="flex min-w-0 items-center gap-2">
           <span
             className={cn(
-              "inline-flex size-6 shrink-0 items-center justify-center rounded-md",
+              "inline-flex size-6 shrink-0 items-center justify-center rounded-md text-white",
               iconTint,
             )}
           >

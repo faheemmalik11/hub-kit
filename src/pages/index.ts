@@ -44,7 +44,11 @@ export { englishFileNamingLabels } from "./file-naming/labels";
 export type { FileNamingLabels } from "./file-naming/labels";
 export { buildSuggestedFilename, UNSAFE_FILENAME_CHARS } from "./file-naming/build-filename";
 export { OverviewPage } from "./overview/overview-page";
-export type { OverviewPageProps, OverviewWidget } from "./overview/overview-page";
+export type {
+  OverviewLinks,
+  OverviewPageProps,
+  OverviewWidget,
+} from "./overview/overview-page";
 export { englishOverviewLabels } from "./overview/labels";
 export type { OverviewLabels } from "./overview/labels";
 export * from "./invoice-detail";

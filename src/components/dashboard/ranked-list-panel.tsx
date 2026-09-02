@@ -12,6 +12,7 @@ export function RankedListPanel({
   periodLabels,
   formatDay,
   className,
+  dataTour,
 }: {
   title: string;
   totalLabel?: string;
@@ -22,6 +23,7 @@ export function RankedListPanel({
   periodLabels?: PeriodLabels;
   formatDay: (iso: string) => string;
   className?: string;
+  dataTour?: string;
 }) {
   if (!loading && rows.length === 0) return null;
 
@@ -38,6 +40,7 @@ export function RankedListPanel({
         />
       }
       className={className}
+      dataTour={dataTour}
     >
       {loading ? <RankedBarsSkeleton /> : <RankedBars rows={rows} />}
     </DashboardPanel>

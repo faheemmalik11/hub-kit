@@ -1,9 +1,13 @@
 import { Link } from "@tanstack/react-router";
 
+import { cn } from "../../lib/class-names";
+
 export interface StageTile {
   key: string;
   label: string;
   count: number;
+  tileClassName?: string;
+  labelClassName?: string;
   link: { to: string; search?: Record<string, unknown> };
 }
 
@@ -15,9 +19,14 @@ export function StageTiles({ stages, loading }: { stages: StageTile[]; loading: 
           key={stage.key}
           to={stage.link.to}
           search={stage.link.search as never}
-          className="flex flex-col justify-center rounded-xl border border-border p-2.5 transition-colors hover:bg-brand-wash focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={cn(
+            "flex flex-col justify-center rounded-xl p-2.5 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            stage.tileClassName,
+          )}
         >
-          <div className="truncate text-sm font-medium text-muted-foreground">{stage.label}</div>
+          <div className={cn("truncate text-sm font-medium", stage.labelClassName)}>
+            {stage.label}
+          </div>
           <div className="mt-0.5 text-2xl font-semibold tracking-tight tabular-nums text-foreground">
             {loading ? "—" : stage.count}
           </div>

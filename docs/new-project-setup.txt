@@ -96,3 +96,20 @@ Nothing else changes. Adapters, theme, registry and routes stay
 as they are. Only a brand-new page needs new work: one adapter,
 one line in hub.config.mjs, one registry binding, then
 npx hub-kit sync.
+
+
+STEP 9 - OPTIONAL: ADD A GUIDED TOUR
+------------------------------------
+Write one tour object per page in the project's own language, then
+wrap the Shell once:
+
+    import { TourProvider, TourButton } from "@wt/hub-kit/tour";
+
+    <TourProvider tours={{ "/uebersicht": overviewTour }}>
+      <Shell headerActions={<TourButton />} ...rest />
+    </TourProvider>
+
+A tour opens by itself the first time a user lands on the page.
+After it is skipped or finished it only opens again from the button.
+Full instructions, including the target names each kit page
+offers, are in docs/tour-guide.md.

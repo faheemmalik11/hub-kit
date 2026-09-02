@@ -12,3 +12,4 @@ export { englishReminderDialogLabels } from "../components/notifications/reminde
 export { englishErrorStateLabels, englishPaginationLabels } from "../components/feedback";
 export { englishFormatters } from "../lib/formatters";
 export { englishOverviewLabels } from "../pages/overview/labels";
+export { englishTourLabels } from "../components/tour/labels";

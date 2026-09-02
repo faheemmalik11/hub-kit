@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Check, ChevronDown, ChevronLeft } from "lucide-react";
-import { enUS } from "date-fns/locale";
-import type { Locale } from "date-fns";
-import type { DateRange } from "react-day-picker";
 
 import { Button } from "../../ui/button";
-import { Calendar } from "../../ui/calendar";
+import {
+  DateRangeCalendar,
+  englishDateRangeCalendarLabels,
+  type DateRangeCalendarLabels,
+} from "./date-range-calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import {
   isOverviewPeriod,
@@ -25,6 +26,7 @@ export interface PeriodLabels {
   period: Record<OverviewPeriod, string>;
   back: string;
   reset: string;
+  calendar: DateRangeCalendarLabels;
 }
 
 export const englishPeriodLabels: PeriodLabels = {
@@ -41,6 +43,7 @@ export const englishPeriodLabels: PeriodLabels = {
   },
   back: "Back",
   reset: "Reset",
+  calendar: englishDateRangeCalendarLabels,
 };
 
 const PRESETS = OVERVIEW_PERIODS.filter((period) => period !== "custom");
@@ -78,37 +81,23 @@ export function useStoredPeriod(key: string): [PeriodValue, (value: PeriodValue)
   return [value, set];
 }
 
-function toIsoDate(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
-    date.getDate(),
-  ).padStart(2, "0")}`;
-}
-
-function fromIsoDate(iso?: string): Date | undefined {
-  if (!iso) return undefined;
-  const [year, month, day] = iso.slice(0, 10).split("-").map(Number);
-  if (!year || !month || !day) return undefined;
-  return new Date(year, month - 1, day);
-}
-
 export function PeriodPicker({
   value,
   onChange,
   className,
   labels = englishPeriodLabels,
   formatDay,
-  locale = enUS,
+  locale = "en",
 }: {
   value: PeriodValue;
   onChange: (value: PeriodValue) => void;
   className?: string;
   labels?: PeriodLabels;
   formatDay: (iso: string) => string;
-  locale?: Locale;
+  locale?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [customOpen, setCustomOpen] = useState(false);
-  const [range, setRange] = useState<DateRange | undefined>();
 
   const isCustom = value.period === "custom";
   const label =
@@ -123,7 +112,6 @@ export function PeriodPicker({
         setOpen(nextOpen);
         if (nextOpen) {
           setCustomOpen(isCustom);
-          setRange({ from: fromIsoDate(value.from), to: fromIsoDate(value.to) });
         }
       }}
     >
@@ -142,46 +130,32 @@ export function PeriodPicker({
       </PopoverTrigger>
       <PopoverContent align="end" className="w-auto p-1">
         {customOpen ? (
-          <div>
-            <Calendar
-              mode="range"
-              numberOfMonths={1}
-              defaultMonth={fromIsoDate(value.from) ?? new Date()}
-              selected={range}
+          <div className="p-2">
+            <DateRangeCalendar
+              open={open}
+              from={value.from ?? ""}
+              to={value.to ?? ""}
               locale={locale}
-              onSelect={(nextRange) => {
-                setRange(nextRange);
-                if (nextRange?.from && nextRange?.to) {
-                  onChange({
-                    period: "custom",
-                    from: toIsoDate(nextRange.from),
-                    to: toIsoDate(nextRange.to),
-                  });
-                  setOpen(false);
+              labels={labels.calendar}
+              footerExtra={
+                <button
+                  type="button"
+                  onClick={() => setCustomOpen(false)}
+                  className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                >
+                  <ChevronLeft className="size-3" />
+                  {labels.back}
+                </button>
+              }
+              onApply={(from, to) => {
+                if (!from || !to) {
+                  onChange({ period: OVERVIEW_PERIOD_DEFAULT, from: undefined, to: undefined });
+                } else {
+                  onChange({ period: "custom", from, to });
                 }
+                setOpen(false);
               }}
             />
-            <div className="flex items-center justify-between border-t border-border px-1 pt-1">
-              <button
-                type="button"
-                onClick={() => setCustomOpen(false)}
-                className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                <ChevronLeft className="size-3" />
-                {labels.back}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setRange(undefined);
-                  onChange({ period: OVERVIEW_PERIOD_DEFAULT, from: undefined, to: undefined });
-                  setOpen(false);
-                }}
-                className="cursor-pointer rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              >
-                {labels.reset}
-              </button>
-            </div>
           </div>
         ) : (
           <div className="flex flex-col">

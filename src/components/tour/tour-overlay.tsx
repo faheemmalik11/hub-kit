@@ -36,7 +36,6 @@ export function TourOverlay() {
     return () => window.removeEventListener("resize", readViewport);
   }, []);
 
-  const cardRef = useRef<HTMLDivElement>(null);
   const skipMissingStep = useRef(() => {});
   skipMissingStep.current = tour ? tour.next : () => {};
 
@@ -95,13 +94,6 @@ export function TourOverlay() {
   }, [target]);
 
   useEffect(() => {
-    const wrapper = cardRef.current?.closest<HTMLElement>("[data-radix-popper-content-wrapper]");
-    if (wrapper) {
-      wrapper.style.transition = `transform ${MOVE_DURATION} ease`;
-    }
-  }, [target]);
-
-  useEffect(() => {
     if (!tour?.isOpen) {
       return;
     }
@@ -141,17 +133,15 @@ export function TourOverlay() {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50"
-      role="presentation"
-      onClick={tour.skip}
-    >
+    <div className="fixed inset-0 z-50" role="presentation">
       <div
         className="absolute inset-0"
         style={{ background: "var(--tour-backdrop, rgb(0 0 0 / 0.5))" }}
+        onClick={tour.skip}
       />
       <div
         className="absolute"
+        onClick={tour.skip}
         style={{
           top: rect.top - SPOTLIGHT_PADDING,
           left: rect.left - SPOTLIGHT_PADDING,
@@ -173,13 +163,13 @@ export function TourOverlay() {
           />
         </PopoverAnchor>
         <PopoverContent
-          ref={cardRef}
+          ref={liftCardAboveBackdrop}
           side={sideForScreen(step.placement, rect, viewport)}
           align="center"
           sideOffset={12}
           arrowPadding={16}
           collisionPadding={16}
-          className="w-[min(var(--tour-card-width,22rem),calc(100vw-2rem))] rounded-2xl border-0 px-4 pt-4 pb-2.5 shadow-xl sm:px-5 sm:pt-5 sm:pb-3.5"
+          className="z-[60] w-[min(var(--tour-card-width,22rem),calc(100vw-2rem))] rounded-2xl border-0 px-4 pt-4 pb-2.5 shadow-xl sm:px-5 sm:pt-5 sm:pb-3.5"
           onOpenAutoFocus={(event) => event.preventDefault()}
           onEscapeKeyDown={(event) => event.preventDefault()}
           onPointerDownOutside={(event) => event.preventDefault()}
@@ -253,4 +243,12 @@ function revealTallTarget(element: HTMLElement) {
   const gapAbove = window.innerHeight * TALL_TARGET_GAP;
   const delta = element.getBoundingClientRect().top - containerTop - gapAbove;
   container.scrollBy({ top: delta, behavior: "smooth" });
+}
+
+function liftCardAboveBackdrop(node: HTMLDivElement | null) {
+  const wrapper = node?.closest<HTMLElement>("[data-radix-popper-content-wrapper]");
+  if (!wrapper) {
+    return;
+  }
+  wrapper.style.transition = `transform ${MOVE_DURATION} ease`;
 }

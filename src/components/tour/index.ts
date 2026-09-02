@@ -2,7 +2,9 @@ export type {
   TourContentBlock,
   TourDefinition,
   TourMap,
+  TourOutcome,
   TourPlacement,
+  TourSeenStore,
   TourStep,
 } from "./types";
 export { TourProvider } from "./tour-provider";
@@ -17,4 +19,9 @@ export { TourCard } from "./tour-card";
 export type { TourCardProps } from "./tour-card";
 export { englishTourLabels } from "./labels";
 export type { TourLabels } from "./labels";
-export { hasSeenTour, markTourSeen, resetSeenTours } from "./seen-store";
+export {
+  hasSeenTour,
+  localTourSeenStore,
+  markTourSeen,
+  resetSeenTours,
+} from "./seen-store";

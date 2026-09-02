@@ -1,7 +1,6 @@
 export { DashboardPanel } from "./panel";
 export { KpiCard } from "./kpi-card";
-export { StatTile, StatRow, CHIP } from "./stat-tile";
-export type { ChipTone } from "./stat-tile";
+export { StatTile, StatRow } from "./stat-tile";
 export { StageTiles } from "./stage-tiles";
 export type { StageTile } from "./stage-tiles";
 export { RankedBars, RankedBarsSkeleton } from "./ranked-bars";
@@ -32,3 +31,5 @@ export { PipelineStagesPanel } from "./pipeline-stages-panel";
 export { RankedListPanel } from "./ranked-list-panel";
 export { ProcessingSummaryPanel } from "./processing-summary-panel";
 export type { ProcessingSummary } from "./processing-summary-panel";
+export { DateRangeCalendar, englishDateRangeCalendarLabels } from "./date-range-calendar";
+export type { DateRangeCalendarLabels, IsoDay } from "./date-range-calendar";

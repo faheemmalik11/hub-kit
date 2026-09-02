@@ -25,7 +25,7 @@ async function runInit() {
 };
 `;
 
-  const registryTemplate = `import { ProcessingLogPage } from "@wt/hub-kit/pages";
+  const registryTemplate = `import { ProcessingLogPage } from "@hub-kit/core/pages";
 
 import { processingLogAdapter } from "./adapters/processing-log";
 
@@ -34,7 +34,7 @@ export function ActivityLogPage() {
 }
 `;
 
-  const adapterTemplate = `import type { ProcessingLogAdapter } from "@wt/hub-kit/adapters";
+  const adapterTemplate = `import type { ProcessingLogAdapter } from "@hub-kit/core/adapters";
 
 export const processingLogAdapter: ProcessingLogAdapter = {
   // Implement each member with your project's data layer.
@@ -47,8 +47,8 @@ export const processingLogAdapter: ProcessingLogAdapter = {
 
   console.log("");
   console.log("Add these two lines to your main CSS file:");
-  console.log('  @import "@wt/hub-kit/themes/staey.css";');
-  console.log('  @source "../node_modules/@wt/hub-kit/dist";');
+  console.log('  @import "@hub-kit/core/themes/default.css";');
+  console.log('  @source "../node_modules/@hub-kit/core/dist";');
   console.log("");
   console.log("Next steps:");
   console.log("  1. Fill in src/hub/adapters/processing-log.ts with your data layer.");

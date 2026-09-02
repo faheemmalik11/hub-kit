@@ -1,7 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
 import type { OverviewPeriod, PeriodRange } from "../components/dashboard/periods";
-import type { ChipTone } from "../components/dashboard/stat-tile";
 import type { RankedBarRow } from "../components/dashboard/ranked-bars";
 import type { StageTile } from "../components/dashboard/stage-tiles";
 import type { MoneyTrendPoint } from "../components/dashboard/money-trend-chart";
@@ -18,31 +17,31 @@ export interface MoneyFigure {
 }
 
 export interface OverviewAdapter {
-  useMoneyFigures(ranges: Record<string, PeriodRange>): {
+  useMoneyFigures?(ranges: Record<string, PeriodRange>): {
     data: Record<string, MoneyFigure>;
     loading: boolean;
   };
-  useInvoiceStages(range: PeriodRange): {
+  useInvoiceStages?(range: PeriodRange): {
     data: StageTile[];
     loading: boolean;
     error: boolean;
   };
-  useTopSuppliers(range: PeriodRange): {
+  useTopSuppliers?(range: PeriodRange): {
     data: { rows: RankedBarRow[]; totalText: string };
     loading: boolean;
   };
-  useSpendByCompany(range: PeriodRange): {
+  useSpendByCompany?(range: PeriodRange): {
     data: { rows: RankedBarRow[]; totalText: string };
     loading: boolean;
   };
-  useMoneyTrend(range: PeriodRange): { data: MoneyTrendPoint[]; loading: boolean };
-  useProcessingSummary(range: PeriodRange): {
+  useMoneyTrend?(range: PeriodRange): { data: MoneyTrendPoint[]; loading: boolean };
+  useProcessingSummary?(range: PeriodRange): {
     data: ProcessingSummary | undefined;
     loading: boolean;
     error: boolean;
   };
-  useOpenItemsSummary(): { data: StatRowConfig[]; loading: boolean; error: boolean };
-  useBankSummary(): { data: StatRowConfig[]; loading: boolean; error: boolean };
+  useOpenItemsSummary?(): { data: StatRowConfig[]; loading: boolean; error: boolean };
+  useBankSummary?(): { data: StatRowConfig[]; loading: boolean; error: boolean };
   formatMoney(value: number): string;
   formatMoneyCompact(value: number): string;
   formatDay(iso: string): string;
@@ -52,6 +51,6 @@ export interface MoneyCardConfig {
   key: string;
   icon: LucideIcon;
   to: string;
-  iconTint: ChipTone;
+  iconTint: string;
   higherIsBetter: boolean;
 }

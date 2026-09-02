@@ -39,9 +39,9 @@ not just lightness, so neighboring series stay tellable apart.
 ## How a project uses this
 
 1. Import one preset, or write your own file setting every token above:
-   `@import "@wt/hub-kit/themes/staey.css";`
+   `@import "@hub-kit/core/themes/default.css";`
 2. Tell Tailwind v4 to scan the kit for class names, in your `styles.css`:
-   `@source "../node_modules/@wt/hub-kit/dist";`
+   `@source "../node_modules/@hub-kit/core/dist";`
 
 ## Tour tokens
 
@@ -53,3 +53,5 @@ that sets none still gets a card that matches its theme.
 | `--tour-accent` | `--primary` | Step counter chip and the ring around the highlighted element |
 | `--tour-backdrop` | `rgb(0 0 0 / 0.5)` | The dimmed area outside the highlight |
 | `--tour-card-width` | `22rem` | Width of the tour card |
+| `--tour-ring-gap` | `--background` | The gap between the highlighted element and its ring |
+| `--tour-spotlight-radius` | `--radius` plus 4px | Corner rounding of the highlight |

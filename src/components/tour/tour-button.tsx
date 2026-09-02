@@ -1,4 +1,4 @@
-import { RotateCcw } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 
 import { Button } from "../../ui/button";
 import { cn } from "../../lib/class-names";
@@ -18,12 +18,12 @@ export function TourButton({ className }: TourButtonProps) {
   return (
     <Button
       type="button"
-      variant="outline"
+      variant="ghost"
       size="sm"
-      className={cn("rounded-full", className)}
+      className={cn("gap-1.5", className)}
       onClick={tour.start}
     >
-      <RotateCcw aria-hidden="true" />
+      <HelpCircle aria-hidden="true" />
       {tour.labels.openTour}
     </Button>
   );

@@ -3,7 +3,6 @@ import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { KpiCard } from "./kpi-card";
-import { CHIP, type ChipTone } from "./stat-tile";
 import type { OverviewPeriod } from "./periods";
 import { PeriodPicker, type PeriodLabels, type PeriodValue } from "./period-picker";
 import { cn } from "../../lib/class-names";
@@ -19,7 +18,7 @@ export interface MoneyCardSpec {
   key: string;
   icon: LucideIcon;
   to: string;
-  iconTint: ChipTone;
+  iconTint: string;
   higherIsBetter: boolean;
   label: string;
   countLabel?: (count: number) => string;
@@ -86,7 +85,7 @@ function MoneyCard({
   return (
     <KpiCard
       icon={card.icon}
-      iconTint={CHIP[card.iconTint]}
+      iconTint={card.iconTint}
       label={card.label}
       to={card.to}
       loading={loading}

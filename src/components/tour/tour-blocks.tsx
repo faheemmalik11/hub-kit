@@ -5,10 +5,10 @@ import type { TourContentBlock } from "./types";
 export function TourBlock({ block }: { block: TourContentBlock }) {
   switch (block.kind) {
     case "paragraph":
-      return <p className="text-sm text-muted-foreground">{block.text}</p>;
+      return <p className="text-[13px] leading-relaxed text-muted-foreground sm:text-[15px]">{block.text}</p>;
     case "list":
       return (
-        <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+        <ul className="list-disc space-y-1 pl-5 text-[13px] text-muted-foreground sm:text-sm">
           {block.items.map((item) => (
             <li key={item}>{item}</li>
           ))}
@@ -37,14 +37,14 @@ export function TourBlock({ block }: { block: TourContentBlock }) {
           href={block.href}
           target={block.newTab ? "_blank" : undefined}
           rel={block.newTab ? "noreferrer" : undefined}
-          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+          className="text-[13px] font-medium text-primary underline-offset-4 hover:underline sm:text-sm"
         >
           {block.label}
         </a>
       );
     case "keyValueList":
       return (
-        <dl className="space-y-1 text-sm">
+        <dl className="space-y-1 text-[13px] sm:text-sm">
           {block.pairs.map((pair) => (
             <div key={pair.label} className="flex justify-between gap-3">
               <dt className="text-muted-foreground">{pair.label}</dt>
@@ -65,8 +65,8 @@ function TourCallout({ tone, text }: { tone: "info" | "warning"; text: string })
     <div
       className={
         isWarning
-          ? "flex gap-2 rounded-md bg-[var(--warning-soft)] p-2 text-sm text-[var(--warning)]"
-          : "flex gap-2 rounded-md bg-accent p-2 text-sm text-accent-foreground"
+          ? "flex gap-2 rounded-md bg-[var(--warning-soft)] p-2 text-[13px] text-[var(--warning)] sm:text-sm"
+          : "flex gap-2 rounded-md bg-accent p-2 text-[13px] text-accent-foreground sm:text-sm"
       }
     >
       <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />

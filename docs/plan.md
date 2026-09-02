@@ -5,7 +5,7 @@ and any new one). Build a page once here, turn it on per project.
 
 ## Goal
 
-- A project installs the kit with `npm install @wt/hub-kit@x.y.z` from GitHub Packages.
+- A project installs the kit with `npm install hub-kit@x.y.z` from GitHub Packages.
 - A project file called `hub.config.ts` says which pages are on, at which URL paths,
   with which theme and brand.
 - Adding a page to a project = add one line to its config, run `hub-kit sync`, done.
@@ -90,7 +90,7 @@ projects are deleted. Porting by copy-paste ends.
 
 ## Open decisions
 
-1. Package scope name (`@wt/hub-kit` assumed) and which GitHub org hosts the repo.
+1. Package scope name (`hub-kit` assumed) and which GitHub org hosts the repo.
 2. Handover story: a `hub-kit eject` command that copies the kit as plain files into a
    project, for the day a client repo (Stäy) moves to the client's own GitHub.
 3. The three Hubs not audited yet (Eiffler, Mayestate, Living Immo) need the same route

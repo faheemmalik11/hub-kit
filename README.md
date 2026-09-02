@@ -3,27 +3,27 @@
 One package that powers every Hub project. Pages, components and the theme system live
 here; each project supplies its data adapters, its dictionary, and one theme file.
 
-Rules for working in this repo: see `CLAUDE.md`. The full plan: see `PLAN.md`.
+Rules for working in this repo: see `CLAUDE.md`. The full plan: see `docs/plan.md`.
 
 ## Install in a project
 
 ```bash
-npm install @wt/hub-kit
+npm install @hub-kit/core
 ```
 
 In the project's `styles.css`:
 
 ```css
-@import "@wt/hub-kit/themes/staey.css";
-@source "../node_modules/@wt/hub-kit/dist";
+@import "@hub-kit/core/themes/default.css";
+@source "../node_modules/@hub-kit/core/dist";
 ```
 
 ## Use a component
 
 ```tsx
-import { QueueKpiRow } from "@wt/hub-kit/invoice-queue";
-import { NotificationBell, AlertList } from "@wt/hub-kit/notifications";
-import { Button, Table } from "@wt/hub-kit/ui";
+import { QueueKpiRow } from "@hub-kit/core/invoice-queue";
+import { NotificationBell, AlertList } from "@hub-kit/core/notifications";
+import { Button, Table } from "@hub-kit/core/ui";
 ```
 
 ## Use a page
@@ -32,7 +32,7 @@ A page needs one adapter the project implements, and takes optional labels for
 translation. English works out of the box.
 
 ```tsx
-import { ProcessingLogPage } from "@wt/hub-kit/pages";
+import { ProcessingLogPage } from "@hub-kit/core/pages";
 import { processingLogAdapter } from "../adapters/processing-log";
 
 export function ActivityLog() {
@@ -40,7 +40,7 @@ export function ActivityLog() {
 }
 ```
 
-The adapter interfaces are in `@wt/hub-kit/adapters`. Query hooks return a plain
+The adapter interfaces are in `hub-kit/adapters`. Query hooks return a plain
 `QueryResult` shape, so the project implements them with React Query and Supabase;
 mutations are plain functions returning promises, so the project wraps its own writes
 and cache invalidation.
@@ -60,7 +60,7 @@ Tours are plain data the project owns. One object per page, keyed by the project
 route path:
 
 ```tsx
-import { TourProvider, TourButton, type TourDefinition } from "@wt/hub-kit/tour";
+import { TourProvider, TourButton, type TourDefinition } from "@hub-kit/core/tour";
 
 const overviewTour: TourDefinition = {
   id: "overview",
@@ -81,7 +81,7 @@ const overviewTour: TourDefinition = {
 
 A tour opens by itself the first time a user lands on the page. Once it is skipped or
 finished it never opens by itself again; the Tour button always reopens it. Pages with no
-tour show no button. Target names are listed in `TOUR-TARGETS.md`.
+tour show no button. Target names are listed in `docs/tour-guide.md`.
 
 Steps carry typed content blocks: `paragraph`, `list`, `image`, `video`, `link`,
 `keyValueList` and `callout`. The array order is the order on the card. Styling comes from
@@ -90,6 +90,8 @@ the theme, so a project supplies content only.
 A step with `showPlaceholderData` fills an empty page with sample values while the tour is
 open. Sample values come from a separate read-only adapter, so real data is never read
 through or written to.
+
+Full instructions, including the target names each kit page offers: `docs/tour-guide.md`.
 
 ## Generate route files
 

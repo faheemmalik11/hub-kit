@@ -3,17 +3,17 @@ import { Link } from "@tanstack/react-router";
 import type { LucideIcon } from "lucide-react";
 
 import { DashboardPanel } from "./panel";
-import { CHIP, StatRow, type ChipTone } from "./stat-tile";
+import { StatRow } from "./stat-tile";
 
 export interface StatRowConfig {
   key: string;
   to: string;
   search?: Record<string, unknown>;
   icon: LucideIcon;
-  tone: ChipTone;
+  iconClassName: string;
   label: string;
   value: string;
-  valueTone?: string;
+  valueClassName?: string;
 }
 
 export function StatRowsPanel({
@@ -52,10 +52,10 @@ export function StatRowsPanel({
               to={row.to}
               search={row.search}
               icon={row.icon}
-              iconCls={CHIP[row.tone]}
+              iconCls={row.iconClassName}
               label={row.label}
               value={loading ? "—" : row.value}
-              valueCls={row.valueTone}
+              valueCls={row.valueClassName}
             />
           ))}
         </div>

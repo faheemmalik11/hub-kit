@@ -2,7 +2,6 @@ export interface TourLabels {
   openTour: string;
   stepCounter: (current: number, total: number) => string;
   next: string;
-  back: string;
   skip: string;
   finish: string;
   sampleData: string;
@@ -13,7 +12,6 @@ export const englishTourLabels: TourLabels = {
   openTour: "Tour",
   stepCounter: (current, total) => `${current} of ${total}`,
   next: "Next",
-  back: "Back",
   skip: "Skip tour",
   finish: "Done",
   sampleData: "Sample data",

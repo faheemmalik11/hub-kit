@@ -24,7 +24,7 @@ npm install git+ssh://git@github.com/faheemmalik11/hub-kit.git#master
 Wrap the app where the Shell is rendered. This is the only wiring step:
 
 ```tsx
-import { TourProvider, TourButton } from "@wt/hub-kit/tour";
+import { TourProvider, TourButton } from "@hub-kit/core/tour";
 
 import { overviewTour, customerTour } from "./tours";
 
@@ -80,7 +80,7 @@ One object per page. Pure data, so it can live in a `.ts` file, or later come fr
 database.
 
 ```ts
-import type { TourDefinition } from "@wt/hub-kit/tour";
+import type { TourDefinition } from "@hub-kit/core/tour";
 
 export const overviewTour: TourDefinition = {
   id: "overview",
@@ -174,7 +174,7 @@ default and the sample money is written with the project's own formatter. To put
 rows in another language, build the adapter with your own words and pass it in:
 
 ```tsx
-import { createPlaceholderOverviewAdapter } from "@wt/hub-kit/lib";
+import { createPlaceholderOverviewAdapter } from "@hub-kit/core/lib";
 
 const germanSamples = createPlaceholderOverviewAdapter(
   {
@@ -195,7 +195,7 @@ const germanSamples = createPlaceholderOverviewAdapter(
 On a project's own page, do the swap in the page itself:
 
 ```tsx
-import { useTourPlaceholderData } from "@wt/hub-kit/tour";
+import { useTourPlaceholderData } from "@hub-kit/core/tour";
 
 function MyOverviewPage() {
   const wantsSampleData = useTourPlaceholderData();
@@ -216,7 +216,7 @@ The card's own words default to English. Pass a dictionary to translate them:
 ```
 
 ```ts
-import type { TourLabels } from "@wt/hub-kit/tour";
+import type { TourLabels } from "@hub-kit/core/tour";
 
 export const germanTourLabels: TourLabels = {
   openTour: "Tour",
@@ -259,7 +259,7 @@ The kit remembers finished tours in the browser under `hub-kit.tour.seen`. To wa
 first-visit behaviour again:
 
 ```ts
-import { resetSeenTours } from "@wt/hub-kit/tour";
+import { resetSeenTours } from "@hub-kit/core/tour";
 
 resetSeenTours();
 ```

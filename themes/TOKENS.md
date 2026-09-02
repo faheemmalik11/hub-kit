@@ -39,9 +39,9 @@ not just lightness, so neighboring series stay tellable apart.
 ## How a project uses this
 
 1. Import one preset, or write your own file setting every token above:
-   `@import "@wt/hub-kit/themes/staey.css";`
+   `@import "@hub-kit/core/themes/default.css";`
 2. Tell Tailwind v4 to scan the kit for class names, in your `styles.css`:
-   `@source "../node_modules/@wt/hub-kit/dist";`
+   `@source "../node_modules/@hub-kit/core/dist";`
 
 ## Tour tokens
 

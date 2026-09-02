@@ -1,6 +1,6 @@
 {
-  "name": "@wt/hub-kit",
-  "version": "0.2.0",
+  "name": "@hub-kit/core",
+  "version": "0.3.0",
   "description": "Shared pages, components and theme system for all Hub projects.",
   "type": "module",
   "files": [
@@ -22,6 +22,9 @@
     "./i18n": "./dist/i18n/index.js",
     "./lib": "./dist/lib/index.js",
     "./themes/*": "./themes/*"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "bin": {
     "hub-kit": "./cli/hub-kit.mjs"

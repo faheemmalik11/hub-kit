@@ -57,6 +57,6 @@ export interface TeamAdapter {
   currentUserEmail: string | null;
   /** Roles an admin may assign. The owner role stays out of this list. */
   assignableRoles: string[];
-  /** Placeholder domain for the new-employee email field, e.g. "staey.de". */
+  /** Placeholder domain for the new-employee email field, e.g. "example.com". */
   emailDomain: string;
 }

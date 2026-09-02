@@ -40,11 +40,11 @@ STEP 4 - WIRE UP THE THEME
 --------------------------
 Add these two lines to the project's main CSS file:
 
-    @import "@wt/hub-kit/themes/staey.css";
-    @source "../node_modules/@wt/hub-kit/dist";
+    @import "@hub-kit/core/themes/default.css";
+    @source "../node_modules/@hub-kit/core/dist";
 
 The @source line makes Tailwind scan the kit's files so its CSS
-classes get generated. For a different brand, copy staey.css,
+classes get generated. For a different brand, copy default.css,
 change the tokens (see themes/TOKENS.md in the kit), and import
 your copy instead.
 
@@ -56,7 +56,7 @@ with the project's data layer (for example React Query + Supabase).
 TypeScript lists exactly what is missing.
 
 Each page you enable later gets its own adapter file the same way.
-All adapter interfaces come from "@wt/hub-kit/adapters".
+All adapter interfaces come from "@hub-kit/core/adapters".
 
 
 STEP 6 - CHOOSE PAGES AND PATHS
@@ -90,7 +90,7 @@ STEP 8 - UPDATING THE KIT LATER
 When someone pushes a new kit version to GitHub, the project
 only runs:
 
-    npm update @wt/hub-kit
+    npm update @hub-kit/core
 
 Nothing else changes. Adapters, theme, registry and routes stay
 as they are. Only a brand-new page needs new work: one adapter,
@@ -103,7 +103,7 @@ STEP 9 - OPTIONAL: ADD A GUIDED TOUR
 Write one tour object per page in the project's own language, then
 wrap the Shell once:
 
-    import { TourProvider, TourButton } from "@wt/hub-kit/tour";
+    import { TourProvider, TourButton } from "@hub-kit/core/tour";
 
     <TourProvider tours={{ "/uebersicht": overviewTour }}>
       <Shell headerActions={<TourButton />} ...rest />

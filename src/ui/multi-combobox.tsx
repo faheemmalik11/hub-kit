@@ -17,6 +17,7 @@ import {
 export interface MultiComboboxOption {
   value: string;
   label: string;
+  depth?: number;
   // Extra text to match against when searching — not shown.
   keywords?: string;
 }
@@ -124,12 +125,27 @@ export function MultiCombobox({
                   onSelect={() => toggle(option.value)}
                   className="cursor-pointer gap-2 whitespace-normal data-[selected=true]:bg-accent"
                 >
-                  <Check
+                  {(option.depth ?? 0) > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="-my-1.5 self-stretch shrink-0"
+                      style={{
+                        width: (option.depth ?? 0) * 16,
+                        backgroundImage:
+                          "repeating-linear-gradient(to right, transparent 0, transparent 7px, var(--border) 7px, var(--border) 8px, transparent 8px, transparent 16px)",
+                      }}
+                    />
+                  )}
+                  <span
                     className={cn(
-                      "size-4 shrink-0",
-                      isSelected ? "opacity-100 text-brand" : "opacity-0",
+                      "flex size-4 shrink-0 items-center justify-center rounded-[4px] border",
+                      isSelected
+                        ? "border-brand bg-brand text-primary-foreground"
+                        : "border-input bg-background",
                     )}
-                  />
+                  >
+                    {isSelected && <Check className="size-3" />}
+                  </span>
                   <span className={cn(isSelected && "font-medium text-brand")}>{option.label}</span>
                 </CommandItem>
               );

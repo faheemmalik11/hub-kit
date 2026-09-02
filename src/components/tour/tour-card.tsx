@@ -17,13 +17,15 @@ export function TourCard({ step, stepIndex, stepCount, labels, onNext, onSkip }:
 
   return (
     <div>
-      <span className="inline-flex rounded-full bg-[var(--tour-accent,var(--primary))] px-2 py-0.5 text-[11px] font-semibold text-primary-foreground sm:text-xs">
-        {labels.stepCounter(stepIndex + 1, stepCount)}
-      </span>
-      <h2 className="mt-2 text-[15px] font-semibold leading-snug text-popover-foreground sm:text-[17px]">
-        {step.title}
-      </h2>
-      <div className="mt-2 max-h-[min(70vh,calc(var(--radix-popover-content-available-height,70vh)-6rem))] space-y-2 overflow-y-auto pr-3 pb-1">
+      <div className="flex items-center gap-2">
+        <span className="inline-flex shrink-0 rounded-full bg-[var(--tour-accent,var(--primary))] px-2 py-0.5 text-[11px] font-semibold text-primary-foreground sm:text-xs">
+          {labels.stepCounter(stepIndex + 1, stepCount)}
+        </span>
+        <h2 className="min-w-0 text-[15px] font-semibold leading-snug text-popover-foreground sm:text-[17px]">
+          {step.title}
+        </h2>
+      </div>
+      <div className="mt-2 max-h-[max(8rem,min(70vh,calc(var(--radix-popover-content-available-height,70vh)-6rem)))] space-y-2 overflow-y-auto pr-3 pb-1">
         {step.content.map((block, index) => (
           <TourBlock key={index} block={block} />
         ))}

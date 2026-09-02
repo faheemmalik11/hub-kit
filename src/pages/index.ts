@@ -65,3 +65,4 @@ export * from "./bank-transactions";
 export * from "./bank-accounts";
 export * from "./bank-import";
 export * from "./bank-sync-log";
+export * from "./document-sources";

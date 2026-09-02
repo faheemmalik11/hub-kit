@@ -118,3 +118,15 @@ export type {
   BankReconciliationAdapter,
 } from "./bank-reconciliation";
 export type { SyncLogRow, SyncLogFilter, SyncLogAdapter } from "./bank-sync-log";
+export type {
+  ConnectionTestResult,
+  DocumentSource,
+  DocumentSourcesAdapter,
+  FieldOption,
+  FilingStatus,
+  SourceField,
+  SourceFieldValue,
+  SourceIcon,
+  SourceKind,
+  SourceStatus,
+} from "./document-sources";

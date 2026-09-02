@@ -18,6 +18,7 @@ import {
 export interface ComboboxOption {
   value: string;
   label: string;
+  depth?: number;
   // Extra text to match against when searching (e.g. a code, address) — not shown.
   keywords?: string;
   
@@ -155,6 +156,17 @@ export function Combobox({
                   opt.disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
                 )}
               >
+                  {(opt.depth ?? 0) > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="-my-1.5 self-stretch shrink-0"
+                      style={{
+                        width: (opt.depth ?? 0) * 16,
+                        backgroundImage:
+                          "repeating-linear-gradient(to right, transparent 0, transparent 7px, var(--border) 7px, var(--border) 8px, transparent 8px, transparent 16px)",
+                      }}
+                    />
+                  )}
                 <Check
                   className={cn(
                     "size-4 shrink-0",

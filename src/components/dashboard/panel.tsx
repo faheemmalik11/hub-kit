@@ -7,16 +7,19 @@ export function DashboardPanel({
   titleExtra,
   headerRight,
   className,
+  dataTour,
   children,
 }: {
   title: string;
   titleExtra?: ReactNode;
   headerRight?: ReactNode;
   className?: string;
+  dataTour?: string;
   children: ReactNode;
 }) {
   return (
     <section
+      data-tour={dataTour}
       className={cn(
         "flex min-w-0 flex-col rounded-2xl border border-border bg-card p-4",
         className,

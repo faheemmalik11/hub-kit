@@ -27,6 +27,7 @@ export function ProcessingSummaryPanel({
   periodLabels,
   formatDay,
   className,
+  dataTour,
 }: {
   title: string;
   seeAllLabel: string;
@@ -46,6 +47,7 @@ export function ProcessingSummaryPanel({
   periodLabels?: PeriodLabels;
   formatDay: (iso: string) => string;
   className?: string;
+  dataTour?: string;
 }): ReactNode {
   if (error) return null;
   const value = (n: number | undefined) => (loading || n === undefined ? "—" : String(n));
@@ -67,6 +69,7 @@ export function ProcessingSummaryPanel({
         </>
       }
       className={className}
+      dataTour={dataTour}
     >
       <div className="mt-3 grid flex-1 grid-cols-2 gap-2">
         <StatTile to={seeAllTo} label={labels.processed} value={value(summary?.processed)} />

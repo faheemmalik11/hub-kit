@@ -42,3 +42,14 @@ not just lightness, so neighboring series stay tellable apart.
    `@import "@wt/hub-kit/themes/staey.css";`
 2. Tell Tailwind v4 to scan the kit for class names, in your `styles.css`:
    `@source "../node_modules/@wt/hub-kit/dist";`
+
+## Tour tokens
+
+The guided tour reads these variables. Each one falls back to a core token, so a project
+that sets none still gets a card that matches its theme.
+
+| Token | Falls back to | Controls |
+| --- | --- | --- |
+| `--tour-accent` | `--primary` | Step counter chip and the ring around the highlighted element |
+| `--tour-backdrop` | `rgb(0 0 0 / 0.5)` | The dimmed area outside the highlight |
+| `--tour-card-width` | `22rem` | Width of the tour card |

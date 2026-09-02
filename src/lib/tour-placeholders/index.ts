@@ -1,0 +1,1 @@
+export { placeholderOverviewAdapter } from "./overview";

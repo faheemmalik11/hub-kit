@@ -24,6 +24,7 @@ export function StatRowsPanel({
   footerLink,
   headerRight,
   className,
+  dataTour,
 }: {
   title: string;
   rows: StatRowConfig[];
@@ -32,9 +33,15 @@ export function StatRowsPanel({
   footerLink?: { to: string; label: string };
   headerRight?: ReactNode;
   className?: string;
+  dataTour?: string;
 }) {
   return (
-    <DashboardPanel title={title} headerRight={headerRight} className={className}>
+    <DashboardPanel
+      title={title}
+      headerRight={headerRight}
+      className={className}
+      dataTour={dataTour}
+    >
       {!loading && rows.length === 0 && emptyText ? (
         <p className="mt-3 text-sm text-muted-foreground">{emptyText}</p>
       ) : (

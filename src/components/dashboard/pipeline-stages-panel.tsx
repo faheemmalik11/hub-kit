@@ -12,6 +12,7 @@ export function PipelineStagesPanel({
   periodLabels,
   formatDay,
   className,
+  dataTour,
 }: {
   title: string;
   stages: StageTile[];
@@ -22,6 +23,7 @@ export function PipelineStagesPanel({
   periodLabels?: PeriodLabels;
   formatDay: (iso: string) => string;
   className?: string;
+  dataTour?: string;
 }) {
   if (error) return null;
   const total = stages.reduce((sum, stage) => sum + stage.count, 0);
@@ -39,6 +41,7 @@ export function PipelineStagesPanel({
         />
       }
       className={className}
+      dataTour={dataTour}
     >
       <StageTiles stages={stages} loading={loading} />
     </DashboardPanel>

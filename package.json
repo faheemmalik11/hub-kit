@@ -1,6 +1,6 @@
 {
   "name": "@hub-kit/core",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "description": "Shared pages, components and theme system for all Hub projects.",
   "type": "module",
   "files": [

@@ -3,18 +3,27 @@ import { useRouterState } from "@tanstack/react-router";
 
 import { englishTourLabels, type TourLabels } from "./labels";
 import { findTourTarget } from "./find-target";
-import { hasSeenTour, markTourSeen } from "./seen-store";
+import { localTourSeenStore } from "./seen-store";
 import { TourContext, type TourState } from "./tour-context";
 import { TourOverlay } from "./tour-overlay";
-import type { TourMap } from "./types";
+import type { TourMap, TourSeenStore } from "./types";
+
+const STABLE_FRAMES = 10;
+const MAX_WAIT_FRAMES = 600;
 
 export interface TourProviderProps {
   tours: TourMap;
   labels?: TourLabels;
+  seenStore?: TourSeenStore;
   children: ReactNode;
 }
 
-export function TourProvider({ tours, labels = englishTourLabels, children }: TourProviderProps) {
+export function TourProvider({
+  tours,
+  labels = englishTourLabels,
+  seenStore = localTourSeenStore,
+  children,
+}: TourProviderProps) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const tour = tours[pathname] ?? null;
   const [openTourId, setOpenTourId] = useState<string | null>(null);
@@ -32,21 +41,48 @@ export function TourProvider({ tours, labels = englishTourLabels, children }: To
   }, [pathname, close]);
 
   const tourId = tour?.id ?? null;
+  const tourVersion = tour?.version ?? 1;
   const autoStartAllowed = tour?.autoStart !== false;
   const firstTarget = tour?.steps[0]?.target ?? null;
+  const storeIsReady = seenStore.isReady;
+  const alreadySeen = tourId !== null && storeIsReady && seenStore.hasSeen(tourId, tourVersion);
 
   useEffect(() => {
-    if (!tourId || !firstTarget || !autoStartAllowed || hasSeenTour(tourId)) {
+    if (!tourId || !firstTarget || !autoStartAllowed || !storeIsReady || alreadySeen) {
       return;
     }
-    const frame = requestAnimationFrame(() => {
-      if (findTourTarget(firstTarget)) {
-        setStepIndex(0);
-        setOpenTourId(tourId);
+
+    let frame = 0;
+    let attempts = 0;
+    let lastHeight = -1;
+    let stableFrames = 0;
+
+    const waitForSettledPage = () => {
+      attempts += 1;
+      if (attempts > MAX_WAIT_FRAMES) {
+        return;
       }
-    });
+      const element = findTourTarget(firstTarget);
+      if (element) {
+        const height = element.getBoundingClientRect().height;
+        if (height > 0 && height === lastHeight) {
+          stableFrames += 1;
+          if (stableFrames >= STABLE_FRAMES) {
+            setStepIndex(0);
+            setOpenTourId(tourId);
+            return;
+          }
+        } else {
+          stableFrames = 0;
+        }
+        lastHeight = height;
+      }
+      frame = requestAnimationFrame(waitForSettledPage);
+    };
+
+    frame = requestAnimationFrame(waitForSettledPage);
     return () => cancelAnimationFrame(frame);
-  }, [tourId, firstTarget, autoStartAllowed]);
+  }, [tourId, firstTarget, autoStartAllowed, storeIsReady, alreadySeen]);
 
   const start = useCallback(() => {
     if (!tour || tour.steps.length === 0) {
@@ -56,23 +92,28 @@ export function TourProvider({ tours, labels = englishTourLabels, children }: To
     setOpenTourId(tour.id);
   }, [tour]);
 
-  const finish = useCallback(() => {
-    if (tour) {
-      markTourSeen(tour.id);
-    }
-    close();
-  }, [tour, close]);
+  const finish = useCallback(
+    (status: "skipped" | "completed") => {
+      if (tour) {
+        seenStore.markSeen(tour.id, tour.version ?? 1, { status, lastStep: stepIndex });
+      }
+      close();
+    },
+    [tour, seenStore, stepIndex, close],
+  );
 
   const next = useCallback(() => {
     if (!tour) {
       return;
     }
     if (stepIndex + 1 >= tour.steps.length) {
-      finish();
+      finish("completed");
       return;
     }
     setStepIndex(stepIndex + 1);
   }, [tour, stepIndex, finish]);
+
+  const skip = useCallback(() => finish("skipped"), [finish]);
 
   const back = useCallback(() => {
     setStepIndex((index) => (index > 0 ? index - 1 : index));
@@ -91,9 +132,9 @@ export function TourProvider({ tours, labels = englishTourLabels, children }: To
       start,
       next,
       back,
-      skip: finish,
+      skip: skip,
     };
-  }, [tour, stepIndex, isOpen, labels, start, next, back, finish]);
+  }, [tour, stepIndex, isOpen, labels, start, next, back, skip]);
 
   return (
     <TourContext.Provider value={value}>

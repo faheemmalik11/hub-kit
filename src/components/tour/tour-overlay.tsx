@@ -105,6 +105,24 @@ export function TourOverlay() {
     if (!tour?.isOpen) {
       return;
     }
+    const body = document.body;
+    const previousOverflow = body.style.overflow;
+    const previousPadding = body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    body.style.overflow = "hidden";
+    if (scrollbarWidth > 0) {
+      body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+    return () => {
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPadding;
+    };
+  }, [tour?.isOpen]);
+
+  useEffect(() => {
+    if (!tour?.isOpen) {
+      return;
+    }
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         tour.skip();
@@ -123,7 +141,11 @@ export function TourOverlay() {
   }
 
   return (
-    <div className="fixed inset-0 z-50" role="presentation">
+    <div
+      className="fixed inset-0 z-50"
+      role="presentation"
+      onClick={tour.skip}
+    >
       <div
         className="absolute inset-0"
         style={{ background: "var(--tour-backdrop, rgb(0 0 0 / 0.5))" }}

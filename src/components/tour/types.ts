@@ -21,6 +21,19 @@ export interface TourDefinition {
   id: string;
   steps: TourStep[];
   autoStart?: boolean;
+  version?: number;
+}
+
+export type TourOutcome = "skipped" | "completed";
+
+export interface TourSeenStore {
+  isReady: boolean;
+  hasSeen: (tourId: string, version: number) => boolean;
+  markSeen: (
+    tourId: string,
+    version: number,
+    outcome: { status: TourOutcome; lastStep: number },
+  ) => void;
 }
 
 export type TourMap = Record<string, TourDefinition>;

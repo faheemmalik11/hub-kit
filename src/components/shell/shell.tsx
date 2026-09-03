@@ -282,7 +282,7 @@ export function ShellHeader({
 }) {
   const crumbs = useShellCrumbs({ nav, homeLabel, staticLeafLabels });
   return (
-    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border bg-header/90 px-4 backdrop-blur-sm">
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border/80 bg-[var(--shell-header,var(--background))]/85 px-4 backdrop-blur-sm">
       <SidebarTrigger className="-ml-1 shrink-0" />
       <Separator orientation="vertical" className="mr-1 h-4 shrink-0" />
       <Breadcrumb aria-label={breadcrumbAriaLabel} className="min-w-0">
@@ -347,7 +347,7 @@ export function Shell({
             badges={badges}
             closeLabel={closeLabel}
           />
-          <SidebarInset className="min-w-0 bg-brand-wash">
+          <SidebarInset className="min-w-0 bg-[var(--shell-wash,transparent)]">
             <ShellHeader
               nav={nav}
               homeLabel={homeLabel}

@@ -1,6 +1,6 @@
 {
   "name": "@hub-kit/core",
-  "version": "0.3.41",
+  "version": "0.3.42",
   "description": "Shared pages, components and theme system for all Hub projects.",
   "type": "module",
   "files": [
@@ -16,6 +16,7 @@
     "./access": "./dist/components/access/index.js",
     "./pages": "./dist/pages/index.js",
     "./adapters": "./dist/adapters/index.js",
+    "./approval-rules": "./dist/pages/approval-rules/index.js",
     "./dashboard": "./dist/components/dashboard/index.js",
     "./data-table": "./dist/components/data-table/index.js",
     "./shell": "./dist/components/shell/index.js",

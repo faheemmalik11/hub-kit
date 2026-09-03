@@ -13,7 +13,7 @@ export type ShellNavGroup = {
   key: string;
   label: string;
   icon: LucideIcon;
-  items: ShellNavLink[];
+  items: ShellNavEntry[];
   tourId?: string;
 };
 
@@ -26,3 +26,7 @@ export function isShellGroup(entry: ShellNavEntry): entry is ShellNavGroup {
 export type ShellBadge = { count: number; title?: string };
 
 export type Crumb = { label: string; to?: string };
+
+export function flattenShellLinks(entries: ShellNavEntry[]): ShellNavLink[] {
+  return entries.flatMap((entry) => (isShellGroup(entry) ? flattenShellLinks(entry.items) : entry));
+}

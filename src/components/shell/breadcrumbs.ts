@@ -1,4 +1,35 @@
-import { isShellGroup, type Crumb, type ShellNavEntry, type ShellNavLink } from "./types";
+import {
+  isShellGroup,
+  type Crumb,
+  type ShellNavEntry,
+  type ShellNavGroup,
+  type ShellNavLink,
+} from "./types";
+
+function findTrail(
+  entries: ShellNavEntry[],
+  base: string,
+  groups: ShellNavGroup[] = [],
+): { groups: ShellNavGroup[]; link: ShellNavLink } | undefined {
+  for (const entry of entries) {
+    if (isShellGroup(entry)) {
+      const found = findTrail(entry.items, base, [...groups, entry]);
+      if (found) return found;
+    } else if (entry.to === base && entry.to !== "/") {
+      return { groups, link: entry };
+    }
+  }
+  return undefined;
+}
+
+function firstLink(entry: ShellNavEntry): ShellNavLink | undefined {
+  if (!isShellGroup(entry)) return entry;
+  for (const child of entry.items) {
+    const found = firstLink(child);
+    if (found) return found;
+  }
+  return undefined;
+}
 
 export function buildCrumbs({
   nav,
@@ -17,19 +48,13 @@ export function buildCrumbs({
   const base = `/${segments[0]}`;
   const crumbs: Crumb[] = [{ label: homeLabel, to: "/" }];
 
+  const trail = findTrail(nav, base);
   let page: ShellNavLink | undefined;
-  for (const entry of nav) {
-    if (isShellGroup(entry)) {
-      const child = entry.items.find((c) => c.to === base);
-      if (child) {
-        crumbs.push({ label: entry.label, to: entry.items[0]?.to });
-        page = child;
-        break;
-      }
-    } else if (entry.to === base && entry.to !== "/") {
-      page = entry;
-      break;
+  if (trail) {
+    for (const group of trail.groups) {
+      crumbs.push({ label: group.label, to: firstLink(group)?.to });
     }
+    page = trail.link;
   }
 
   const isLeafPage = segments.length === 1;

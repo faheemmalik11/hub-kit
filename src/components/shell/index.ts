@@ -12,6 +12,7 @@ export {
 } from "./shell";
 export { buildCrumbs } from "./breadcrumbs";
 export {
+  flattenShellLinks,
   isShellGroup,
   type Crumb,
   type ShellBadge,

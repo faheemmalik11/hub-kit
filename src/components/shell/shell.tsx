@@ -51,6 +51,7 @@ import { TooltipProvider } from "../../ui/tooltip";
 import { cn } from "../../lib/class-names";
 import { buildCrumbs } from "./breadcrumbs";
 import {
+  flattenShellLinks,
   isShellGroup,
   type ShellBadge,
   type ShellNavEntry,
@@ -215,7 +216,7 @@ export function ShellRailMenu({
 }: {
   label: string;
   icon: LucideIcon;
-  items: ShellNavLink[];
+  items: ShellNavEntry[];
   active: boolean;
   align?: "start" | "end";
 }) {
@@ -244,7 +245,7 @@ export function ShellRailMenu({
         )}
       >
         <DropdownMenuLabel>{label}</DropdownMenuLabel>
-        {items.map((child) => {
+        {flattenShellLinks(items).map((child) => {
           const childActive = child.to === "/" ? pathname === "/" : pathname.startsWith(child.to);
           return (
             <DropdownMenuItem key={child.key} asChild>
@@ -288,9 +289,7 @@ export function ShellHeader({
       <Breadcrumb aria-label={breadcrumbAriaLabel} className="min-w-0">
         <BreadcrumbList className="flex-nowrap sm:hidden">
           <BreadcrumbItem className="min-w-0">
-            <BreadcrumbPage className="truncate">
-              {crumbs[crumbs.length - 1]?.label}
-            </BreadcrumbPage>
+            <BreadcrumbPage className="truncate">{crumbs[crumbs.length - 1]?.label}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
 
@@ -316,9 +315,7 @@ export function ShellHeader({
           })}
         </BreadcrumbList>
       </Breadcrumb>
-      {actions && (
-        <div className="ml-auto flex shrink-0 items-center gap-2 pl-2">{actions}</div>
-      )}
+      {actions && <div className="ml-auto flex shrink-0 items-center gap-2 pl-2">{actions}</div>}
     </header>
   );
 }
@@ -364,7 +361,6 @@ export function Shell({
   );
 }
 
-
 // Just the nav list (links, collapsible groups, badges, rail flyouts) — exported so a custom
 // sidebar can place the standard menu inside its own frame.
 export function ShellNavMenu({
@@ -384,57 +380,57 @@ export function ShellNavMenu({
 
   return (
     <SidebarMenu>
-            {nav.map((item) => {
-              const badge = badges?.[item.key];
-              const showBadge = !!badge && badge.count > 0;
+      {nav.map((item) => {
+        const badge = badges?.[item.key];
+        const showBadge = !!badge && badge.count > 0;
 
-              if (!isShellGroup(item)) {
-                const active = isActive(item.to);
-                return (
-                  <SidebarMenuItem key={item.key} data-tour={item.tourId}>
-                    <SidebarMenuButton asChild isActive={active}>
-                      <Link
-                        to={item.to}
-                        aria-current={active ? "page" : undefined}
-                        onClick={closeOnMobile}
-                      >
-                        <item.icon />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                    {showBadge && <ShellBadgePill badge={badge} />}
-                  </SidebarMenuItem>
-                );
-              }
+        if (!isShellGroup(item)) {
+          const active = isActive(item.to);
+          return (
+            <SidebarMenuItem key={item.key} data-tour={item.tourId}>
+              <SidebarMenuButton asChild isActive={active}>
+                <Link
+                  to={item.to}
+                  aria-current={active ? "page" : undefined}
+                  onClick={closeOnMobile}
+                >
+                  <item.icon />
+                  <span>{item.label}</span>
+                </Link>
+              </SidebarMenuButton>
+              {showBadge && <ShellBadgePill badge={badge} />}
+            </SidebarMenuItem>
+          );
+        }
 
-              const groupActive = item.items.some((c) => isActive(c.to));
+        const groupActive = flattenShellLinks(item.items).some((c) => isActive(c.to));
 
-              if (railCollapsed) {
-                return (
-                  <SidebarMenuItem key={item.key} data-tour={item.tourId}>
-                    <ShellRailMenu
-                      label={item.label}
-                      icon={item.icon}
-                      items={item.items}
-                      active={groupActive}
-                    />
-                    {showBadge && <ShellBadgePill badge={badge} />}
-                  </SidebarMenuItem>
-                );
-              }
+        if (railCollapsed) {
+          return (
+            <SidebarMenuItem key={item.key} data-tour={item.tourId}>
+              <ShellRailMenu
+                label={item.label}
+                icon={item.icon}
+                items={item.items}
+                active={groupActive}
+              />
+              {showBadge && <ShellBadgePill badge={badge} />}
+            </SidebarMenuItem>
+          );
+        }
 
-              return (
-                <ShellNavGroupItem
-                  key={item.key}
-                  item={item}
-                  groupActive={groupActive}
-                  isActive={isActive}
-                  closeOnMobile={closeOnMobile}
-                  badge={showBadge ? badge : undefined}
-                />
-              );
-            })}
-          </SidebarMenu>
+        return (
+          <ShellNavGroupItem
+            key={item.key}
+            item={item}
+            groupActive={groupActive}
+            isActive={isActive}
+            closeOnMobile={closeOnMobile}
+            badge={showBadge ? badge : undefined}
+          />
+        );
+      })}
+    </SidebarMenu>
   );
 }
 
@@ -509,7 +505,70 @@ function ShellNavGroupItem({
         {badge && <ShellBadgePill badge={badge} className="right-8" />}
         <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
           <SidebarMenuSub>
-            {item.items.map((child) => (
+            {item.items.map((child) =>
+              isShellGroup(child) ? (
+                <ShellNavSubGroup
+                  key={child.key}
+                  item={child}
+                  isActive={isActive}
+                  closeOnMobile={closeOnMobile}
+                />
+              ) : (
+                <SidebarMenuSubItem key={child.key}>
+                  <SidebarMenuSubButton asChild isActive={isActive(child.to)}>
+                    <Link
+                      to={child.to}
+                      aria-current={isActive(child.to) ? "page" : undefined}
+                      onClick={closeOnMobile}
+                    >
+                      <child.icon className="size-4" />
+                      <span>{child.label}</span>
+                    </Link>
+                  </SidebarMenuSubButton>
+                </SidebarMenuSubItem>
+              ),
+            )}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
+
+/**
+ * A group nested inside another group. Rendered as its own collapsible section rather than being
+ * flattened into the parent: a Hub whose whole accounting module sits under one entry would
+ * otherwise show fifteen screens as one undifferentiated list, which is what the sections are
+ * there to prevent.
+ */
+function ShellNavSubGroup({
+  item,
+  isActive,
+  closeOnMobile,
+}: {
+  item: ShellNavGroup;
+  isActive: (to: string) => boolean;
+  closeOnMobile: () => void;
+}) {
+  const groupActive = flattenShellLinks(item.items).some((child) => isActive(child.to));
+  const [open, setOpen] = useState(groupActive);
+  useEffect(() => {
+    if (groupActive) setOpen(true);
+  }, [groupActive]);
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="group/subcollapsible">
+      <SidebarMenuSubItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuSubButton className="cursor-pointer">
+            <item.icon className="size-4" />
+            <span>{item.label}</span>
+            <ChevronDown className="ml-auto size-4 shrink-0 opacity-60 transition-transform group-data-[state=open]/subcollapsible:rotate-180" />
+          </SidebarMenuSubButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
+          <SidebarMenuSub className="mr-0 translate-x-px pr-0">
+            {flattenShellLinks(item.items).map((child) => (
               <SidebarMenuSubItem key={child.key}>
                 <SidebarMenuSubButton asChild isActive={isActive(child.to)}>
                   <Link
@@ -525,7 +584,7 @@ function ShellNavGroupItem({
             ))}
           </SidebarMenuSub>
         </CollapsibleContent>
-      </SidebarMenuItem>
+      </SidebarMenuSubItem>
     </Collapsible>
   );
 }

@@ -66,29 +66,3 @@ function IconGlyph({
   const Icon = icon;
   return <Icon className="size-1/2 text-muted-foreground" />;
 }
-
-export function StatusText({
-  status,
-  labels,
-}: {
-  status: SourceStatus;
-  labels: DocumentSourcesLabels;
-}) {
-  const text =
-    status === "connected"
-      ? labels.statusConnected
-      : status === "not_connected"
-        ? labels.statusNotConnected
-        : labels.statusNotConfigured;
-  return (
-    <span className="inline-flex items-center gap-1.5 text-sm text-foreground">
-      <span
-        className={cn(
-          "size-2 rounded-full",
-          status === "connected" ? "bg-success" : "bg-muted-foreground/40",
-        )}
-      />
-      {text}
-    </span>
-  );
-}

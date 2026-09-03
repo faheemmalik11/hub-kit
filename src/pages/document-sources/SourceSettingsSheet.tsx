@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import type { ReactNode } from "react";
 import {
   ChevronDown,
   Loader2,
   RefreshCw,
   TriangleAlert,
   Wifi,
+  X,
 } from "lucide-react";
 
 import type {
@@ -33,6 +35,7 @@ import {
 } from "../../ui/select";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetDescription,
   SheetFooter,
@@ -71,7 +74,10 @@ export function SourceSettingsSheet({
       open={source !== null}
       onOpenChange={(open) => (!open ? onClose() : undefined)}
     >
-      <SheetContent className="flex w-full flex-col gap-0 overflow-y-auto sm:max-w-lg lg:max-w-xl">
+      <SheetContent
+        hideClose
+        className="flex w-full flex-col gap-0 overflow-y-auto pb-0 sm:max-w-lg lg:max-w-xl"
+      >
         {source && (
           <SheetBody
             key={source.id}
@@ -130,8 +136,10 @@ function SheetBody({
     setValues((current) => ({ ...current, [key]: value }));
   };
 
-  const plainFields = source.fields.filter((field) => !field.advanced);
-  const advancedFields = source.fields.filter((field) => field.advanced);
+  const headerField = source.fields.find((field) => field.showInHeader);
+  const bodyFields = source.fields.filter((field) => !field.showInHeader);
+  const plainFields = bodyFields.filter((field) => !field.advanced);
+  const advancedFields = bodyFields.filter((field) => field.advanced);
 
   const save = async () => {
     setSaving(true);
@@ -161,7 +169,7 @@ function SheetBody({
     }
   };
 
-  const renderField = (field: SourceField) => (
+  const renderField = (field: SourceField, index?: number) => (
     <FieldRow
       key={field.key}
       field={field}
@@ -173,6 +181,8 @@ function SheetBody({
           : undefined
       }
       labels={labels}
+      stepNumber={index === undefined ? undefined : index + 1}
+      isLastStep={index === plainFields.length - 1}
     />
   );
 
@@ -181,42 +191,58 @@ function SheetBody({
       <SheetHeader className="border-b border-border pb-4 text-left">
         <div className="flex items-start gap-3">
           <SourceIconBadge icon={source.icon} className="size-12" />
-          <div className="min-w-0">
-            <SheetTitle className="truncate text-left">
-              {source.name}
-            </SheetTitle>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-3">
+              <SheetTitle className="truncate text-left">
+                {source.name}
+              </SheetTitle>
+              <div className="flex shrink-0 items-center gap-3">
+                {headerField && (
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm text-muted-foreground">
+                      {headerField.label}
+                    </Label>
+                    <Switch
+                      checked={values[headerField.key] === true}
+                      onCheckedChange={(checked) =>
+                        setValue(headerField.key, checked)
+                      }
+                      disabled={!canEdit}
+                    />
+                  </div>
+                )}
+                <SheetClose className="cursor-pointer rounded-sm text-muted-foreground opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring">
+                  <X className="size-4" />
+                  <span className="sr-only">{labels.sheet.close}</span>
+                </SheetClose>
+              </div>
+            </div>
             <SheetDescription className="truncate text-left">
               {source.detail}
             </SheetDescription>
-            <div className="mt-1.5">
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
               <StatusChip status={source.status} labels={labels} />
+              {source.lastChangedBy && (
+                <span className="text-xs leading-5 text-muted-foreground">
+                  {labels.sheet.lastChangedBy(source.lastChangedBy)}
+                </span>
+              )}
             </div>
-            {source.lastChangedBy && (
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                {labels.sheet.lastChangedBy(source.lastChangedBy)}
-              </p>
-            )}
           </div>
         </div>
       </SheetHeader>
 
-      <div className="flex gap-4 border-b border-border">
-        <span className="border-b-2 border-primary pb-2 pt-3 text-sm font-semibold text-foreground">
-          {labels.sheet.settingsTab}
-        </span>
-      </div>
-
-      <div className="flex-1 divide-y divide-border">
+      <div className="flex-1 pt-5">
         {plainFields.map(renderField)}
 
         {advancedFields.length > 0 && (
-          <Collapsible className="py-4">
+          <Collapsible className="mt-2 border-t border-border py-4">
             <CollapsibleTrigger className="flex w-full cursor-pointer items-center justify-between text-sm font-semibold text-foreground">
               {labels.sheet.advanced}
               <ChevronDown className="size-4 text-muted-foreground" />
             </CollapsibleTrigger>
             <CollapsibleContent className="space-y-5 pt-4">
-              {advancedFields.map(renderField)}
+              {advancedFields.map((field) => renderField(field))}
             </CollapsibleContent>
           </Collapsible>
         )}
@@ -247,7 +273,7 @@ function SheetBody({
         )}
       </div>
 
-      <SheetFooter className="sticky bottom-0 mt-auto flex-col gap-2 border-t border-border bg-popover pb-1 pt-4">
+      <SheetFooter className="sticky bottom-0 -mx-6 mt-auto flex-col gap-2 border-t border-border bg-popover px-6 py-4">
         {saveError && (
           <p className="text-sm text-destructive">{labels.sheet.saveFailed}</p>
         )}
@@ -285,38 +311,46 @@ function FieldRow({
   onChange,
   onRefresh,
   labels,
+  stepNumber,
+  isLastStep,
 }: {
   field: SourceField;
   value: SourceFieldValue;
   onChange: (value: SourceFieldValue) => void;
   onRefresh?: () => void;
   labels: DocumentSourcesLabels;
+  stepNumber?: number;
+  isLastStep?: boolean;
 }) {
   const hasOptions =
     field.kind === "select" ||
     field.kind === "multiSelect" ||
     field.kind === "treeSelect";
+  const isMulti = field.kind === "multiSelect";
+  const selectedIds = Array.isArray(value) ? value : [];
 
   if (field.kind === "toggle") {
     return (
-      <div className="flex items-center justify-between gap-4 py-4 first:pt-5">
-        <div className="min-w-0">
-          <Label className="text-sm font-semibold text-foreground">
-            {field.label}
-          </Label>
-          {field.description && (
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              {field.description}
-            </p>
-          )}
+      <StepShell stepNumber={stepNumber} isLastStep={isLastStep}>
+        <div className="flex items-center justify-between gap-4">
+          <div className="min-w-0">
+            <Label className="text-sm font-semibold text-foreground">
+              {field.label}
+            </Label>
+            {field.description && (
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {field.description}
+              </p>
+            )}
+          </div>
+          <Switch checked={value === true} onCheckedChange={onChange} />
         </div>
-        <Switch checked={value === true} onCheckedChange={onChange} />
-      </div>
+      </StepShell>
     );
   }
 
   return (
-    <div className="py-4 first:pt-5">
+    <StepShell stepNumber={stepNumber} isLastStep={isLastStep}>
       <div className="flex items-center justify-between gap-2">
         <Label className="text-sm font-semibold text-foreground">
           {field.label}
@@ -351,9 +385,58 @@ function FieldRow({
           field={field}
           value={value}
           onChange={onChange}
-          noneLabel={labels.sheet.none}
-          loadingLabel={labels.sheet.optionsLoading}
+          labels={labels}
         />
+      </div>
+      {isMulti && selectedIds.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {selectedIds.map((id) => (
+            <span
+              key={id}
+              className="inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs text-foreground"
+            >
+              <span className="max-w-44 truncate" title={id}>
+                {chipLabel(field.options, id, labels)}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  onChange(selectedIds.filter((other) => other !== id))
+                }
+                className="cursor-pointer rounded-sm text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </StepShell>
+  );
+}
+
+function StepShell({
+  stepNumber,
+  isLastStep,
+  children,
+}: {
+  stepNumber?: number;
+  isLastStep?: boolean;
+  children: ReactNode;
+}) {
+  if (stepNumber === undefined) {
+    return <div>{children}</div>;
+  }
+  return (
+    <div className="flex gap-4">
+      <div className="flex flex-col items-center">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-xs font-semibold text-foreground">
+          {stepNumber}
+        </span>
+        {!isLastStep && <span className="mt-1 w-px flex-1 bg-border" />}
+      </div>
+      <div className={cn("min-w-0 flex-1", isLastStep ? "pb-2" : "pb-6")}>
+        {children}
       </div>
     </div>
   );
@@ -363,15 +446,20 @@ function FieldControl({
   field,
   value,
   onChange,
-  noneLabel,
-  loadingLabel,
+  labels,
 }: {
   field: SourceField;
   value: SourceFieldValue;
   onChange: (value: SourceFieldValue) => void;
-  noneLabel: string;
-  loadingLabel: string;
+  labels: DocumentSourcesLabels;
 }) {
+  const noneLabel = labels.sheet.none;
+  const loadingLabel = labels.sheet.optionsLoading;
+  const pickerText = {
+    selectedCountText: labels.sheet.selectedCount,
+    searchPlaceholder: labels.sheet.searchPlaceholder,
+    emptyText: labels.sheet.noMatch,
+  };
   const selectedIds = Array.isArray(value)
     ? value
     : typeof value === "string" && value
@@ -421,6 +509,7 @@ function FieldControl({
             multi
             placeholder={placeholder}
             disabled={field.optionsLoading}
+            {...pickerText}
           />
         );
       }
@@ -431,6 +520,7 @@ function FieldControl({
           options={options}
           placeholder={placeholder}
           disabled={field.optionsLoading}
+          {...pickerText}
         />
       );
     case "treeSelect":
@@ -446,6 +536,7 @@ function FieldControl({
           multi={false}
           placeholder={placeholder}
           disabled={field.optionsLoading}
+          {...pickerText}
         />
       );
     case "toggle":
@@ -525,4 +616,30 @@ function treeNodes(
     ...(options ?? []),
     ...missing.map((id) => ({ value: id, label: id })),
   ];
+}
+
+function chipLabel(
+  options: FieldOption[] | undefined,
+  id: string,
+  labels: DocumentSourcesLabels,
+): string {
+  const found = labelFor(options, id);
+  if (found !== null) {
+    return found;
+  }
+  const shortId = `…${id.slice(-6)}`;
+  return labels.sheet.unknownValue ? labels.sheet.unknownValue(shortId) : id;
+}
+
+function labelFor(options: FieldOption[] | undefined, id: string): string | null {
+  for (const option of options ?? []) {
+    if (option.value === id) {
+      return option.label;
+    }
+    const nested = labelFor(option.children, id);
+    if (nested !== null) {
+      return nested;
+    }
+  }
+  return null;
 }

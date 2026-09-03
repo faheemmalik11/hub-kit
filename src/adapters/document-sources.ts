@@ -27,6 +27,7 @@ export interface SourceField {
   optionsError?: boolean;
   placeholder?: string;
   advanced?: boolean;
+  showInHeader?: boolean;
 }
 
 export interface DocumentSource {
@@ -39,6 +40,9 @@ export interface DocumentSource {
   statusDetail: string;
   link?: string;
   lastChangedBy?: string | null;
+  selectedItems?: string[];
+  selectedItemsLabel?: string;
+  selectedItemsLoading?: boolean;
   fields: SourceField[];
 }
 

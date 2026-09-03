@@ -24,11 +24,14 @@ export interface DocumentSourcesLabels {
   footerDetail: string;
   nextRun?: string;
   sheet: {
-    settingsTab: string;
     close: string;
     refreshOptions: string;
     optionsLoading: string;
     optionsFailed: string;
+    unknownValue?: (shortId: string) => string;
+    selectedCount?: (count: number) => string;
+    searchPlaceholder?: string;
+    noMatch?: string;
     lastChangedBy: (name: string) => string;
     adminOnly: string;
     testConnection: string;
@@ -72,11 +75,14 @@ export const englishDocumentSourcesLabels: DocumentSourcesLabels = {
     "Changes you make here are applied the next time documents are processed.",
   nextRun: "Next run",
   sheet: {
-    settingsTab: "Settings",
     close: "Close",
     refreshOptions: "Refresh",
     optionsLoading: "Loading…",
     optionsFailed: "The list could not be loaded. Saved values are kept.",
+    unknownValue: (shortId) => `Unknown entry ${shortId}`,
+    selectedCount: (count) => `${count} selected`,
+    searchPlaceholder: "Search …",
+    noMatch: "No match found.",
     lastChangedBy: (name) => `Last changed by ${name}`,
     adminOnly: "Only administrators can change these settings.",
     testConnection: "Test connection",

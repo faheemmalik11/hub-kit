@@ -1,6 +1,13 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
-import { CheckCircle2, CircleHelp, Info, PauseCircle, Plus } from "lucide-react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import {
+  CheckCircle2,
+  CircleHelp,
+  Clock,
+  History,
+  Info,
+  PauseCircle,
+  Plus,
+} from "lucide-react";
 
 import type {
   DocumentSource,
@@ -10,7 +17,7 @@ import { Button } from "../../ui/button";
 import { ErrorState } from "../../components/feedback/query-states";
 import { Skeleton } from "../../ui/skeleton";
 import { cn } from "../../lib/class-names";
-import { SourceIconBadge, StatusText } from "./source-visuals";
+import { SourceIconBadge, StatusChip } from "./source-visuals";
 import { SourceSettingsSheet } from "./SourceSettingsSheet";
 import {
   englishDocumentSourcesLabels,
@@ -35,22 +42,18 @@ export function DocumentSourcesPage({
   const canEdit = adapter.useCanEdit ? adapter.useCanEdit() : true;
   const sources = sourcesQuery.data ?? [];
 
-  const [openSourceId, setOpenSourceId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const hash = useRouterState({ select: (state) => state.location.hash });
+  const openSourceId = (hash ?? "").replace(/^#/, "");
   const openSource =
     sources.find((source) => source.id === openSourceId) ?? null;
 
-  const hash = useRouterState({ select: (state) => state.location.hash });
-  const handledHash = useRef<string | null>(null);
-  useEffect(() => {
-    const target = (hash ?? "").replace(/^#/, "");
-    if (!target || handledHash.current === target) {
-      return;
-    }
-    if (sources.some((source) => source.id === target)) {
-      handledHash.current = target;
-      setOpenSourceId(target);
-    }
-  }, [hash, sources]);
+  const openSourceSheet = (sourceId: string) => {
+    void navigate({ to: ".", hash: sourceId });
+  };
+  const closeSourceSheet = () => {
+    void navigate({ to: ".", hash: "", replace: true });
+  };
 
   return (
     <div className={cn("max-w-4xl", className)}>
@@ -89,9 +92,9 @@ export function DocumentSourcesPage({
 
       <div
         data-tour="document-sources-status"
-        className="mt-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:flex-wrap sm:items-center"
+        className="mt-6 flex items-start justify-between gap-4 rounded-xl border border-border bg-card p-4"
       >
-        <div className="flex min-w-0 flex-1 items-start gap-3">
+        <div className="flex min-w-0 items-start gap-3">
           {filing.active ? (
             <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" />
           ) : (
@@ -106,16 +109,19 @@ export function DocumentSourcesPage({
                 ? labels.filingActiveDetail
                 : labels.filingInactiveDetail}
             </p>
+            {filing.lastRunLabel && (
+              <p className="mt-1.5 flex flex-wrap items-center gap-x-1.5 text-sm">
+                <History className="size-3.5 shrink-0 text-muted-foreground" />
+                <span className="text-muted-foreground">{labels.lastRun}:</span>
+                <span className="font-medium text-foreground">
+                  {filing.lastRunLabel}
+                </span>
+              </p>
+            )}
           </div>
         </div>
-        {filing.lastRunLabel && (
-          <div className="flex items-baseline gap-2 pl-8 sm:block sm:pl-0 sm:text-right">
-            <p className="text-xs text-muted-foreground">{labels.lastRun}</p>
-            <p className="text-sm text-foreground">{filing.lastRunLabel}</p>
-          </div>
-        )}
         {links?.logs && (
-          <Button asChild variant="outline" size="sm" className="ml-8 self-start sm:ml-0 sm:self-auto">
+          <Button asChild variant="outline" size="sm" className="shrink-0">
             <Link to={links.logs}>{labels.viewLogs}</Link>
           </Button>
         )}
@@ -153,7 +159,7 @@ export function DocumentSourcesPage({
               key={source.id}
               source={source}
               labels={labels}
-              onOpen={() => setOpenSourceId(source.id)}
+              onOpen={() => openSourceSheet(source.id)}
               onConnect={
                 adapter.connect ? () => adapter.connect?.(source.id) : undefined
               }
@@ -182,28 +188,30 @@ export function DocumentSourcesPage({
         </button>
       )}
 
-      <p className="mt-8 flex items-start gap-2 rounded-xl bg-accent p-4 text-sm text-accent-foreground">
+      <div className="mt-8 flex items-start gap-3 rounded-xl bg-accent p-4 text-accent-foreground">
         <Info className="mt-0.5 size-4 shrink-0" />
-        <span>
-          <span className="font-semibold">{labels.footerTitle}</span>
-          <br />
-          {labels.footerDetail}
+        <div className="min-w-0 space-y-1">
+          <p className="text-sm font-semibold">{labels.footerTitle}</p>
+          <p className="text-sm text-accent-foreground/80">
+            {labels.footerDetail}
+          </p>
           {labels.nextRun && filing.nextRunLabel && (
-            <>
-              <br />
-              <span className="font-medium">
-                {labels.nextRun}: {filing.nextRunLabel}
+            <p className="flex items-center gap-1.5 pt-1 text-sm">
+              <Clock className="size-3.5 shrink-0" />
+              <span className="text-accent-foreground/80">
+                {labels.nextRun}:
               </span>
-            </>
+              <span className="font-medium">{filing.nextRunLabel}</span>
+            </p>
           )}
-        </span>
-      </p>
+        </div>
+      </div>
 
       <SourceSettingsSheet
         source={openSource}
         labels={labels}
         canEdit={canEdit}
-        onClose={() => setOpenSourceId(null)}
+        onClose={closeSourceSheet}
         onSave={adapter.saveSource}
         onRefreshOptions={adapter.refreshOptions}
         onTestConnection={adapter.testConnection}
@@ -223,6 +231,8 @@ function SourceRow({
   onOpen: () => void;
   onConnect?: () => void;
 }) {
+  const selectedItems = source.selectedItems ?? [];
+  const hasSelectedItems = selectedItems.length > 0;
   const needsConnect =
     source.status === "not_connected" && onConnect !== undefined;
   const actionLabel = needsConnect
@@ -232,34 +242,58 @@ function SourceRow({
       : labels.edit;
 
   return (
-    <div className="flex items-center gap-4 p-4">
+    <div className="flex items-start gap-4 p-4">
       <SourceIconBadge icon={source.icon} />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-foreground">
-          {source.name}
-        </p>
-        <p className="truncate text-sm text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <p className="truncate text-sm font-semibold text-foreground">
+            {source.name}
+          </p>
+          <StatusChip status={source.status} labels={labels} />
+        </div>
+        <p className="mt-0.5 truncate text-sm text-muted-foreground">
           {source.detail}
         </p>
+        {hasSelectedItems ? (
+          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {source.selectedItemsLabel && (
+              <span className="text-xs text-muted-foreground">
+                {source.selectedItemsLabel}
+              </span>
+            )}
+            {source.selectedItemsLoading
+              ? selectedItems.map((item) => (
+                  <Skeleton key={item} className="h-[22px] w-24 rounded-md" />
+                ))
+              : selectedItems.map((item) => (
+                  <span
+                    key={item}
+                    title={item}
+                    className="max-w-40 truncate rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-xs text-foreground"
+                  >
+                    {item}
+                  </span>
+                ))}
+          </div>
+        ) : (
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+            {source.statusDetail}
+          </p>
+        )}
       </div>
-      <div className="hidden w-48 min-w-0 shrink-0 sm:block">
-        <StatusText status={source.status} labels={labels} />
-        <p className="mt-0.5 truncate text-sm text-muted-foreground">
-          {source.statusDetail}
-        </p>
-      </div>
-      <div className="flex w-20 shrink-0 justify-end">
+      <div className="flex shrink-0 justify-end">
         {source.fields.length > 0 || needsConnect ? (
           <Button
             type="button"
             variant="outline"
             size="sm"
+            className="min-w-20"
             onClick={needsConnect ? onConnect : onOpen}
           >
             {actionLabel}
           </Button>
         ) : source.link && labels.open ? (
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline" size="sm" className="min-w-20">
             <Link to={source.link}>{labels.open}</Link>
           </Button>
         ) : null}

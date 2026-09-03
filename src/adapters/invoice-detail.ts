@@ -1,6 +1,6 @@
 import type { HistoryConfig } from "../pages/invoice-detail/history";
 import type { LadderColors } from "../pages/invoice-detail/WorkflowLadder";
-import type { InvoiceHistoryEntry, InvoiceReviewFields } from "../pages/invoice-detail/pipeline-types";
+import type { InvoiceHistoryEntry, InvoiceReviewFields } from "../components/invoice-review/pipeline-types";
 
 export interface InvoiceDetailConfig extends HistoryConfig {
   chainActionIds: string[];

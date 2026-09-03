@@ -30,6 +30,12 @@ export interface SourceField {
   showInHeader?: boolean;
 }
 
+export interface SourceRun {
+  text: string;
+  ok: boolean;
+  running?: boolean;
+}
+
 export interface DocumentSource {
   id: string;
   kind: SourceKind;
@@ -43,6 +49,7 @@ export interface DocumentSource {
   selectedItems?: string[];
   selectedItemsLabel?: string;
   selectedItemsLoading?: boolean;
+  runs?: SourceRun[];
   fields: SourceField[];
 }
 

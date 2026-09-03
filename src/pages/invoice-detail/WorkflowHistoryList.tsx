@@ -2,7 +2,7 @@ import { ArrowUp } from "lucide-react";
 
 import { cn } from "../../lib/class-names";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../../ui/tooltip";
-import { InvoiceHistoryEntry } from "./pipeline-types";
+import { InvoiceHistoryEntry } from "../../components/invoice-review/pipeline-types";
 
 export interface WorkflowHistoryRow {
   entry: InvoiceHistoryEntry;

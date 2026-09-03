@@ -1,7 +1,7 @@
 import { ArrowRight, ChevronRight, TriangleAlert } from "lucide-react";
 
 import { cn } from "../../lib/class-names";
-import { SEVERITY_ACTION_REQUIRED, ReviewLine } from "./review";
+import { SEVERITY_ACTION_REQUIRED, ReviewLine } from "../../components/invoice-review/review";
 
 export interface ReviewCardLabels {
   title: string;

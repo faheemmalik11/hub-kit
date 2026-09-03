@@ -1,4 +1,9 @@
-export interface BankTransactionsLabels {
+import {
+  englishBankMatchPanelLabels,
+  type BankMatchPanelLabels,
+} from "../../components/bank-match/BankMatchPanel";
+
+export interface BankTransactionsLabels extends BankMatchPanelLabels {
   title: string;
   subtitle: string;
   searchPlaceholder: string;
@@ -17,29 +22,12 @@ export interface BankTransactionsLabels {
   sortAscending: string;
   sortDescending: string;
   matchingStatus: (status: string) => string;
-  panelTitle: string;
   panelSubtitle: (account: string) => string;
-  candidatesTitle: string;
-  candidatesEmpty: string;
-  candidateConfirm: string;
-  candidateReject: string;
-  matchConfirmed: string;
-  matchRejected: string;
-  scoreLabel: (score: number) => string;
-  manualSearchToggle: string;
-  manualSearchPlaceholder: string;
-  manualSearchEmpty: string;
-  noReceiptButton: string;
-  noReceiptDialogTitle: string;
-  noReceiptReasonPlaceholder: string;
-  noReceiptConfirm: string;
-  noReceiptMarked: string;
-  noReceiptClear: string;
   noReceiptCleared: string;
-  close: string;
 }
 
 export const englishBankTransactionsLabels: BankTransactionsLabels = {
+  ...englishBankMatchPanelLabels,
   title: "Bank reconciliation",
   subtitle: "Match incoming bank movements to invoices.",
   searchPlaceholder: "Search counterparty or reference",
@@ -58,24 +46,6 @@ export const englishBankTransactionsLabels: BankTransactionsLabels = {
   sortAscending: "Ascending",
   sortDescending: "Descending",
   matchingStatus: (status) => status,
-  panelTitle: "Match this transaction",
   panelSubtitle: (account) => `Account: ${account}`,
-  candidatesTitle: "Suggested matches",
-  candidatesEmpty: "No suggested matches.",
-  candidateConfirm: "Confirm match",
-  candidateReject: "Not a match",
-  matchConfirmed: "Match confirmed.",
-  matchRejected: "Match rejected.",
-  scoreLabel: (score) => `${score}% match`,
-  manualSearchToggle: "Search manually",
-  manualSearchPlaceholder: "Search invoices…",
-  manualSearchEmpty: "No invoices found.",
-  noReceiptButton: "No receipt expected",
-  noReceiptDialogTitle: "Mark as no receipt expected",
-  noReceiptReasonPlaceholder: "Reason",
-  noReceiptConfirm: "Confirm",
-  noReceiptMarked: "Marked as no receipt expected.",
-  noReceiptClear: "Undo",
   noReceiptCleared: "Cleared.",
-  close: "Close",
 };

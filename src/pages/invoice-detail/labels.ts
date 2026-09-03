@@ -1,9 +1,9 @@
-import { ReviewBadgeLabels } from "./ReviewBadge";
+import { ReviewBadgeLabels } from "../../components/invoice-review/ReviewBadge";
 import { ReviewCardLabels } from "./ReviewCard";
 import { WorkflowLadderLabels } from "./WorkflowLadder";
 import { WorkflowHistoryLabels } from "./WorkflowHistoryList";
-import { OutgoingInvoiceLabels } from "./OutgoingInvoiceFlag";
-import { ReviewLabels, ReviewReasonId } from "./review";
+import { OutgoingInvoiceLabels } from "../../components/invoice-review/OutgoingInvoiceFlag";
+import { ReviewLabels, ReviewReasonId } from "../../components/invoice-review/review";
 import { HistoryLabels } from "./history";
 
 export interface InvoiceDetailPageLabels {

@@ -247,6 +247,34 @@ function SheetBody({
           </Collapsible>
         )}
 
+        {source.runs && source.runs.length > 0 && labels.sheet.recentRuns && (
+          <div className="border-t border-border py-4">
+            <p className="text-sm font-semibold text-foreground">
+              {labels.sheet.recentRuns}
+            </p>
+            <div className="mt-2 space-y-1.5">
+              {source.runs.map((run, index) => (
+                <p
+                  key={index}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                >
+                  <span
+                    className={cn(
+                      "size-1.5 shrink-0 rounded-full",
+                      run.running
+                        ? "animate-pulse bg-muted-foreground"
+                        : run.ok
+                          ? "bg-success"
+                          : "bg-destructive",
+                    )}
+                  />
+                  <span className="truncate">{run.text}</span>
+                </p>
+              ))}
+            </div>
+          </div>
+        )}
+
         {onTestConnection && (
           <div className="border-t border-border pt-4">
             <Button

@@ -10,8 +10,11 @@ import { TablePagination } from "../../components/feedback/table-pagination";
 import { cn } from "../../lib/class-names";
 import type { OpenItemsAdapter } from "../../adapters/open-items";
 import type { BankReconciliationAdapter, BankTransactionRecord } from "../../adapters/bank-reconciliation";
-import { BankMatchPanel } from "../bank-transactions/BankMatchPanel";
-import { englishBankTransactionsLabels, type BankTransactionsLabels } from "../bank-transactions/labels";
+import {
+  BankMatchPanel,
+  englishBankMatchPanelLabels,
+  type BankMatchPanelLabels,
+} from "../../components/bank-match/BankMatchPanel";
 import { computeUrgency } from "./urgency";
 import { englishOpenItemsLabels, type OpenItemsLabels } from "./labels";
 
@@ -21,14 +24,14 @@ export interface OpenItemsPageProps {
   openItemsAdapter: OpenItemsAdapter;
   bankAdapter: BankReconciliationAdapter;
   labels?: OpenItemsLabels;
-  bankLabels?: BankTransactionsLabels;
+  bankLabels?: BankMatchPanelLabels;
 }
 
 export function OpenItemsPage({
   openItemsAdapter,
   bankAdapter,
   labels = englishOpenItemsLabels,
-  bankLabels = englishBankTransactionsLabels,
+  bankLabels = englishBankMatchPanelLabels,
 }: OpenItemsPageProps) {
   const [tab, setTab] = useState("open");
 
@@ -244,7 +247,7 @@ function MissingReceiptsTab({
 }: {
   adapter: BankReconciliationAdapter;
   labels: OpenItemsLabels;
-  bankLabels: BankTransactionsLabels;
+  bankLabels: BankMatchPanelLabels;
 }) {
   const [direction, setDirection] = useState("__all");
   const [company, setCompany] = useState("");

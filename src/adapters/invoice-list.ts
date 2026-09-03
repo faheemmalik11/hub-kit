@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
-import type { Extracted, Validation } from "../pages/invoice-detail/pipeline-types";
+import type { Extracted, Validation } from "../components/invoice-review/pipeline-types";
 import type { QueueTone } from "../components/invoice-queue";
 
 export interface InvoiceListRow {

@@ -1,4 +1,15 @@
-export { Shell, ShellFooterGroup, ShellRailMenu, useShellLeafLabel, type ShellProps } from "./shell";
+export {
+  Shell,
+  ShellFooterGroup,
+  ShellHeader,
+  ShellLeafLabelProvider,
+  ShellNavMenu,
+  ShellRailMenu,
+  ShellSidebar,
+  useShellCrumbs,
+  useShellLeafLabel,
+  type ShellProps,
+} from "./shell";
 export { buildCrumbs } from "./breadcrumbs";
 export {
   isShellGroup,

@@ -15,13 +15,54 @@ import {
   DialogTitle,
 } from "../../ui/dialog";
 import { Combobox } from "../../ui/combobox";
-import { readableErrorMessage } from "../../components/feedback/query-states";
+import { readableErrorMessage } from "../feedback/query-states";
 import { cn } from "../../lib/class-names";
 import type {
   BankReconciliationAdapter,
   BankTransactionRecord,
 } from "../../adapters/bank-reconciliation";
-import type { BankTransactionsLabels } from "./labels";
+
+export interface BankMatchPanelLabels {
+  panelTitle: string;
+  scoreLabel: (score: number) => string;
+  close: string;
+  candidatesTitle: string;
+  candidatesEmpty: string;
+  candidateConfirm: string;
+  candidateReject: string;
+  matchConfirmed: string;
+  matchRejected: string;
+  manualSearchToggle: string;
+  manualSearchPlaceholder: string;
+  manualSearchEmpty: string;
+  noReceiptButton: string;
+  noReceiptClear: string;
+  noReceiptConfirm: string;
+  noReceiptDialogTitle: string;
+  noReceiptMarked: string;
+  noReceiptReasonPlaceholder: string;
+}
+
+export const englishBankMatchPanelLabels: BankMatchPanelLabels = {
+  panelTitle: "Match this transaction",
+  scoreLabel: (score) => `${score}% match`,
+  close: "Close",
+  candidatesTitle: "Suggested matches",
+  candidatesEmpty: "No suggested matches.",
+  candidateConfirm: "Confirm match",
+  candidateReject: "Not a match",
+  matchConfirmed: "Match confirmed.",
+  matchRejected: "Match rejected.",
+  manualSearchToggle: "Search manually",
+  manualSearchPlaceholder: "Search invoices…",
+  manualSearchEmpty: "No invoices found.",
+  noReceiptButton: "No receipt expected",
+  noReceiptClear: "Undo",
+  noReceiptConfirm: "Confirm",
+  noReceiptDialogTitle: "Mark as no receipt expected",
+  noReceiptMarked: "Marked: no receipt expected.",
+  noReceiptReasonPlaceholder: "Reason",
+};
 
 export function BankMatchPanel({
   transaction,
@@ -32,7 +73,7 @@ export function BankMatchPanel({
   transaction: BankTransactionRecord | null;
   onClose: () => void;
   adapter: BankReconciliationAdapter;
-  labels: BankTransactionsLabels;
+  labels: BankMatchPanelLabels;
 }) {
   const [manualOpen, setManualOpen] = useState(false);
   const [query, setQuery] = useState("");

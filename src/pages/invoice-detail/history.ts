@@ -1,4 +1,4 @@
-import { InvoiceHistoryEntry } from "./pipeline-types";
+import { InvoiceHistoryEntry } from "../../components/invoice-review/pipeline-types";
 
 export interface HistoryConfig {
   legacyActionIds: string[];

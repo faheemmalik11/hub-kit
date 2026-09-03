@@ -128,5 +128,6 @@ export type {
   SourceFieldValue,
   SourceIcon,
   SourceKind,
+  SourceRun,
   SourceStatus,
 } from "./document-sources";

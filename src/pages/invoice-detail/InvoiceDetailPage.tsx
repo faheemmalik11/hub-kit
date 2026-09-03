@@ -28,9 +28,9 @@ import { ErrorState, readableErrorMessage } from "../../components/feedback/quer
 import { cn } from "../../lib/class-names";
 import { englishFormatters, type Formatters } from "../../lib/formatters";
 import type { InvoiceDetailAdapter, InvoiceDetailConfig, InvoiceDetailRecord } from "../../adapters/invoice-detail";
-import { OutgoingInvoiceBanner } from "./OutgoingInvoiceFlag";
-import { buildReviewSummary, hasNoReviewChecks, reviewLines } from "./review";
-import { ReviewBadge } from "./ReviewBadge";
+import { OutgoingInvoiceBanner } from "../../components/invoice-review/OutgoingInvoiceFlag";
+import { buildReviewSummary, hasNoReviewChecks, reviewLines } from "../../components/invoice-review/review";
+import { ReviewBadge } from "../../components/invoice-review/ReviewBadge";
 import { ReviewCard } from "./ReviewCard";
 import { WorkflowLadder } from "./WorkflowLadder";
 import { WorkflowHistoryList, type WorkflowHistoryRow } from "./WorkflowHistoryList";

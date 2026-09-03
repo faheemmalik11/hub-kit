@@ -5,6 +5,8 @@ export type ShellNavLink = {
   label: string;
   to: string;
   icon: LucideIcon;
+  // Rendered as data-tour on the menu item, so a project's tour can spotlight this entry.
+  tourId?: string;
 };
 
 export type ShellNavGroup = {
@@ -12,6 +14,7 @@ export type ShellNavGroup = {
   label: string;
   icon: LucideIcon;
   items: ShellNavLink[];
+  tourId?: string;
 };
 
 export type ShellNavEntry = ShellNavLink | ShellNavGroup;

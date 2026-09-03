@@ -58,14 +58,45 @@ import {
   type ShellNavLink,
 } from "./types";
 
-const ShellLeafLabelContext = createContext<(label: string | null) => void>(() => {});
+const ShellLeafLabelContext = createContext<{
+  label: string | null;
+  setLabel: (label: string | null) => void;
+}>({ label: null, setLabel: () => {} });
 
 export function useShellLeafLabel(label: string | null) {
-  const set = useContext(ShellLeafLabelContext);
+  const { setLabel } = useContext(ShellLeafLabelContext);
   useEffect(() => {
-    set(label);
-    return () => set(null);
-  }, [set, label]);
+    setLabel(label);
+    return () => setLabel(null);
+  }, [setLabel, label]);
+}
+
+// For projects composing their own layout instead of using Shell: wrap the app once so
+// ShellBreadcrumbs and useShellLeafLabel share the same leaf-label state.
+export function ShellLeafLabelProvider({ children }: { children: ReactNode }) {
+  const [label, setLabel] = useState<string | null>(null);
+  const value = useMemo(() => ({ label, setLabel }), [label]);
+  return <ShellLeafLabelContext.Provider value={value}>{children}</ShellLeafLabelContext.Provider>;
+}
+
+export function useShellCrumbs({
+  nav,
+  homeLabel,
+  staticLeafLabels,
+}: {
+  nav: ShellNavEntry[];
+  homeLabel: string;
+  staticLeafLabels?: Record<string, string>;
+}) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { label: leafLabel } = useContext(ShellLeafLabelContext);
+  return useMemo(() => {
+    const built = buildCrumbs({ nav, pathname, homeLabel, staticLeafLabels });
+    if (leafLabel && built.length > 1) {
+      built[built.length - 1] = { ...built[built.length - 1], label: leafLabel };
+    }
+    return built;
+  }, [nav, pathname, homeLabel, staticLeafLabels, leafLabel]);
 }
 
 export interface ShellProps {
@@ -78,6 +109,7 @@ export interface ShellProps {
   staticLeafLabels?: Record<string, string>;
   breadcrumbAriaLabel?: string;
   closeLabel?: string;
+  toaster?: ReactNode;
   children: ReactNode;
 }
 
@@ -86,11 +118,13 @@ export function ShellFooterGroup({
   icon: Icon,
   items,
   active,
+  tourId,
 }: {
   label: string;
   icon: LucideIcon;
   items: ShellNavLink[];
   active: boolean;
+  tourId?: string;
 }) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const { state, isMobile, setOpenMobile } = useSidebar();
@@ -115,7 +149,7 @@ export function ShellFooterGroup({
 
   if (state === "collapsed" && !isMobile) {
     return (
-      <SidebarMenuItem>
+      <SidebarMenuItem data-tour={tourId}>
         <ShellRailMenu label={label} icon={Icon} items={items} active={active} align="end" />
       </SidebarMenuItem>
     );
@@ -126,7 +160,7 @@ export function ShellFooterGroup({
       {/* Opens upward. This group is pinned to the bottom of the sidebar, so growing downward
           like the nav groups above would push its items past the screen edge, which reads as a
           click that did nothing. The content renders BEFORE the trigger so it stacks above it. */}
-      <SidebarMenuItem ref={groupRef} className="flex flex-col">
+      <SidebarMenuItem ref={groupRef} className="flex flex-col" data-tour={tourId}>
         <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down">
           {/* Styled as the SAME card the collapsed rail shows, not as an inline sub-list: this
               group reads as one panel in both sidebar states, so the surface, rounding, border,
@@ -141,7 +175,10 @@ export function ShellFooterGroup({
                     <Link
                       to={child.to}
                       aria-current={childActive ? "page" : undefined}
-                      onClick={() => isMobile && setOpenMobile(false)}
+                      onClick={() => {
+                        setOpen(false);
+                        if (isMobile) setOpenMobile(false);
+                      }}
                     >
                       <child.icon className="size-4" />
                       <span>{child.label}</span>
@@ -228,6 +265,64 @@ export function ShellRailMenu({
   );
 }
 
+// The breadcrumb header bar, extracted so a custom layout can reuse it without Shell.
+// Requires ShellLeafLabelProvider (or Shell itself) above it for detail-page leaf labels.
+export function ShellHeader({
+  nav,
+  homeLabel,
+  staticLeafLabels,
+  breadcrumbAriaLabel,
+  actions,
+}: {
+  nav: ShellNavEntry[];
+  homeLabel: string;
+  staticLeafLabels?: Record<string, string>;
+  breadcrumbAriaLabel?: string;
+  actions?: ReactNode;
+}) {
+  const crumbs = useShellCrumbs({ nav, homeLabel, staticLeafLabels });
+  return (
+    <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border bg-header/90 px-4 backdrop-blur-sm">
+      <SidebarTrigger className="-ml-1 shrink-0" />
+      <Separator orientation="vertical" className="mr-1 h-4 shrink-0" />
+      <Breadcrumb aria-label={breadcrumbAriaLabel} className="min-w-0">
+        <BreadcrumbList className="flex-nowrap sm:hidden">
+          <BreadcrumbItem className="min-w-0">
+            <BreadcrumbPage className="truncate">
+              {crumbs[crumbs.length - 1]?.label}
+            </BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+
+        <BreadcrumbList className="hidden flex-nowrap sm:flex">
+          {crumbs.map((crumb, i) => {
+            const last = i === crumbs.length - 1;
+            return (
+              <BreadcrumbItem key={`${crumb.label}-${i}`} className="min-w-0">
+                {last ? (
+                  <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
+                ) : crumb.to ? (
+                  <BreadcrumbLink asChild>
+                    <Link to={crumb.to} className="truncate">
+                      {crumb.label}
+                    </Link>
+                  </BreadcrumbLink>
+                ) : (
+                  <span className="truncate text-muted-foreground">{crumb.label}</span>
+                )}
+                {!last && <BreadcrumbSeparator className="shrink-0" />}
+              </BreadcrumbItem>
+            );
+          })}
+        </BreadcrumbList>
+      </Breadcrumb>
+      {actions && (
+        <div className="ml-auto flex shrink-0 items-center gap-2 pl-2">{actions}</div>
+      )}
+    </header>
+  );
+}
+
 export function Shell({
   nav,
   logo,
@@ -238,21 +333,12 @@ export function Shell({
   staticLeafLabels,
   breadcrumbAriaLabel,
   closeLabel,
+  toaster,
   children,
 }: ShellProps) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const [leafLabel, setLeafLabel] = useState<string | null>(null);
-  const crumbs = useMemo(() => {
-    const built = buildCrumbs({ nav, pathname, homeLabel, staticLeafLabels });
-    if (leafLabel && built.length > 1) {
-      built[built.length - 1] = { ...built[built.length - 1], label: leafLabel };
-    }
-    return built;
-  }, [nav, pathname, homeLabel, staticLeafLabels, leafLabel]);
-
   return (
     <TooltipProvider delayDuration={200}>
-      <ShellLeafLabelContext.Provider value={setLeafLabel}>
+      <ShellLeafLabelProvider>
         <SidebarProvider>
           <ShellSidebar
             nav={nav}
@@ -262,88 +348,42 @@ export function Shell({
             closeLabel={closeLabel}
           />
           <SidebarInset className="min-w-0 bg-brand-wash">
-            <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-sidebar-border bg-header/90 px-4 backdrop-blur-sm">
-              <SidebarTrigger className="-ml-1 shrink-0" />
-              <Separator orientation="vertical" className="mr-1 h-4 shrink-0" />
-              <Breadcrumb aria-label={breadcrumbAriaLabel} className="min-w-0">
-                <BreadcrumbList className="flex-nowrap sm:hidden">
-                  <BreadcrumbItem className="min-w-0">
-                    <BreadcrumbPage className="truncate">
-                      {crumbs[crumbs.length - 1]?.label}
-                    </BreadcrumbPage>
-                  </BreadcrumbItem>
-                </BreadcrumbList>
-
-                <BreadcrumbList className="hidden flex-nowrap sm:flex">
-                  {crumbs.map((crumb, i) => {
-                    const last = i === crumbs.length - 1;
-                    return (
-                      <BreadcrumbItem key={`${crumb.label}-${i}`} className="min-w-0">
-                        {last ? (
-                          <BreadcrumbPage className="truncate">{crumb.label}</BreadcrumbPage>
-                        ) : crumb.to ? (
-                          <BreadcrumbLink asChild>
-                            <Link to={crumb.to} className="truncate">
-                              {crumb.label}
-                            </Link>
-                          </BreadcrumbLink>
-                        ) : (
-                          <span className="truncate text-muted-foreground">{crumb.label}</span>
-                        )}
-                        {!last && <BreadcrumbSeparator className="shrink-0" />}
-                      </BreadcrumbItem>
-                    );
-                  })}
-                </BreadcrumbList>
-              </Breadcrumb>
-              {headerActions && (
-                <div className="ml-auto flex shrink-0 items-center gap-2 pl-2">{headerActions}</div>
-              )}
-            </header>
+            <ShellHeader
+              nav={nav}
+              homeLabel={homeLabel}
+              staticLeafLabels={staticLeafLabels}
+              breadcrumbAriaLabel={breadcrumbAriaLabel}
+              actions={headerActions}
+            />
             <main className="w-full min-w-0 px-4 py-4 sm:px-6">{children}</main>
-            <Toaster position="bottom-right" />
+            {toaster === undefined ? <Toaster position="bottom-right" /> : toaster}
           </SidebarInset>
         </SidebarProvider>
-      </ShellLeafLabelContext.Provider>
+      </ShellLeafLabelProvider>
     </TooltipProvider>
   );
 }
 
-function ShellSidebar({
+
+// Just the nav list (links, collapsible groups, badges, rail flyouts) — exported so a custom
+// sidebar can place the standard menu inside its own frame.
+export function ShellNavMenu({
   nav,
-  logo,
-  footer,
   badges,
-  closeLabel,
-}: Pick<ShellProps, "nav" | "logo" | "footer" | "badges" | "closeLabel">) {
+}: {
+  nav: ShellNavEntry[];
+  badges?: Record<string, ShellBadge>;
+}) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { state, isMobile, setOpenMobile } = useSidebar();
   const closeOnMobile = () => {
     if (isMobile) setOpenMobile(false);
   };
   const railCollapsed = state === "collapsed" && !isMobile;
-
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="h-14 flex-row items-center justify-between px-3">
-        {logo}
-        {isMobile && (
-          <button
-            type="button"
-            onClick={() => setOpenMobile(false)}
-            aria-label={closeLabel}
-            className="-mr-1 shrink-0 cursor-pointer rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
-          >
-            <X className="size-5" />
-          </button>
-        )}
-      </SidebarHeader>
-
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarMenu>
+    <SidebarMenu>
             {nav.map((item) => {
               const badge = badges?.[item.key];
               const showBadge = !!badge && badge.count > 0;
@@ -351,7 +391,7 @@ function ShellSidebar({
               if (!isShellGroup(item)) {
                 const active = isActive(item.to);
                 return (
-                  <SidebarMenuItem key={item.key}>
+                  <SidebarMenuItem key={item.key} data-tour={item.tourId}>
                     <SidebarMenuButton asChild isActive={active}>
                       <Link
                         to={item.to}
@@ -371,7 +411,7 @@ function ShellSidebar({
 
               if (railCollapsed) {
                 return (
-                  <SidebarMenuItem key={item.key}>
+                  <SidebarMenuItem key={item.key} data-tour={item.tourId}>
                     <ShellRailMenu
                       label={item.label}
                       icon={item.icon}
@@ -395,6 +435,39 @@ function ShellSidebar({
               );
             })}
           </SidebarMenu>
+  );
+}
+
+// The complete sidebar (logo header, nav, optional footer, collapse rail) — exported so a
+// custom layout can keep the standard sidebar while replacing the rest of Shell.
+export function ShellSidebar({
+  nav,
+  logo,
+  footer,
+  badges,
+  closeLabel,
+}: Pick<ShellProps, "nav" | "logo" | "footer" | "badges" | "closeLabel">) {
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  return (
+    <Sidebar collapsible="icon">
+      <SidebarHeader className="h-14 flex-row items-center justify-between px-3">
+        {logo}
+        {isMobile && (
+          <button
+            type="button"
+            onClick={() => setOpenMobile(false)}
+            aria-label={closeLabel}
+            className="-mr-1 shrink-0 cursor-pointer rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+          >
+            <X className="size-5" />
+          </button>
+        )}
+      </SidebarHeader>
+
+      <SidebarContent data-tour="shell-nav">
+        <SidebarGroup>
+          <ShellNavMenu nav={nav} badges={badges} />
         </SidebarGroup>
       </SidebarContent>
 
@@ -425,7 +498,7 @@ function ShellNavGroupItem({
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="group/collapsible">
-      <SidebarMenuItem>
+      <SidebarMenuItem data-tour={item.tourId}>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton>
             <item.icon />

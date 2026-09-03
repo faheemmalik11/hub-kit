@@ -1,11 +1,11 @@
-import { InvoiceReviewFields } from "./pipeline-types";
+import { InvoiceReviewFields } from "../../components/invoice-review/pipeline-types";
 import {
   SOURCE_HUMAN,
   validationBase,
   writeValidationDetail,
   ValidationDetail,
   ValidationDetailEntry,
-} from "./review";
+} from "../../components/invoice-review/review";
 
 const IBAN_CHARS = /^[A-Z0-9]{15,34}$/;
 const IBAN_SEPARATOR = /[;,/|]|\s{2,}|\bund\b/i;

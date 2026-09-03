@@ -29,6 +29,7 @@ export interface DocumentSourcesLabels {
     optionsLoading: string;
     optionsFailed: string;
     unknownValue?: (shortId: string) => string;
+    recentRuns?: string;
     selectedCount?: (count: number) => string;
     searchPlaceholder?: string;
     noMatch?: string;
@@ -80,6 +81,7 @@ export const englishDocumentSourcesLabels: DocumentSourcesLabels = {
     optionsLoading: "Loading…",
     optionsFailed: "The list could not be loaded. Saved values are kept.",
     unknownValue: (shortId) => `Unknown entry ${shortId}`,
+    recentRuns: "Recent runs",
     selectedCount: (count) => `${count} selected`,
     searchPlaceholder: "Search …",
     noMatch: "No match found.",

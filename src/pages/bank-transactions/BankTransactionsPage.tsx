@@ -8,7 +8,7 @@ import { ErrorState, TableSkeleton } from "../../components/feedback/query-state
 import { TablePagination } from "../../components/feedback/table-pagination";
 import type { BankReconciliationAdapter, BankTransactionRecord } from "../../adapters/bank-reconciliation";
 import { MatchStatusBadge, DirectionBadge } from "./badges";
-import { BankMatchPanel } from "./BankMatchPanel";
+import { BankMatchPanel } from "../../components/bank-match/BankMatchPanel";
 import { SortControl } from "./sort-control";
 import { useTableView } from "./use-table-view";
 import { englishBankTransactionsLabels, type BankTransactionsLabels } from "./labels";

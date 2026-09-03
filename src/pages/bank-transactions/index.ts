@@ -1,5 +1,3 @@
-export { BankTransactionsPage } from "./BankTransactionsPage";
-export type { BankTransactionsPageProps } from "./BankTransactionsPage";
 export {
   BankMatchPanel,
   englishBankMatchPanelLabels,

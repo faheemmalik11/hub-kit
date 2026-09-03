@@ -131,3 +131,14 @@ export type {
   SourceRun,
   SourceStatus,
 } from "./document-sources";
+export type {
+  ApprovalRulesAdapter,
+  ApprovalRulesConfig,
+  ApprovalRuleDraft,
+  ApprovalRuleView,
+  ApproverOption,
+  DimensionKey,
+  RuleQuery,
+  ScopeOption,
+} from "./approval-rules";
+export { ANY_VALUE, DIMENSION_WEIGHT, PINNED_DIMENSION_WEIGHT } from "./approval-rules";

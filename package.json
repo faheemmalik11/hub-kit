@@ -1,6 +1,6 @@
 {
   "name": "@hub-kit/core",
-  "version": "0.3.40",
+  "version": "0.3.41",
   "description": "Shared pages, components and theme system for all Hub projects.",
   "type": "module",
   "files": [
@@ -17,6 +17,7 @@
     "./pages": "./dist/pages/index.js",
     "./adapters": "./dist/adapters/index.js",
     "./dashboard": "./dist/components/dashboard/index.js",
+    "./data-table": "./dist/components/data-table/index.js",
     "./shell": "./dist/components/shell/index.js",
     "./tour": "./dist/components/tour/index.js",
     "./i18n": "./dist/i18n/index.js",
@@ -40,16 +41,19 @@
   ],
   "peerDependencies": {
     "@tanstack/react-router": ">=1.100.0",
-    "lucide-react": ">=0.400.0",
-    "react": ">=19",
-    "react-dom": ">=19",
+    "lucide-react": ">=0.400.0 <2",
+    "react": ">=18",
+    "react-dom": ">=18",
     "sonner": ">=2"
   },
   "devDependencies": {
+    "@tanstack/react-router": "^1.170.18",
     "@types/node": "^22.0.0",
     "@types/papaparse": "^5.5.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "lucide-react": "^0.575.0",
+    "sonner": "^2.0.7",
     "typescript": "^5.6.0"
   },
   "dependencies": {
@@ -76,5 +80,13 @@
     "recharts": "^2.15.4",
     "tailwind-merge": "^3.3.0",
     "xlsx": "^0.18.5"
+  },
+  "peerDependenciesMeta": {
+    "@tanstack/react-router": {
+      "optional": true
+    },
+    "sonner": {
+      "optional": true
+    }
   }
 }

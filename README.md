@@ -28,8 +28,12 @@ import { Button, Table } from "@hub-kit/core/ui";
 
 ## Use a page
 
-A page needs one adapter the project implements, and takes optional labels for
-translation. English works out of the box.
+Some screens still ship whole. A page needs one adapter the project implements, and takes
+optional labels for translation. English works out of the box.
+
+New screens should not be built this way — see **Build a list screen** below. The route owns
+its layout and imports the parts; a whole page shared across four projects ends up carrying a
+prop for every difference between them.
 
 ```tsx
 import { ProcessingLogPage } from "@hub-kit/core/pages";
@@ -44,6 +48,27 @@ The adapter interfaces are in `hub-kit/adapters`. Query hooks return a plain
 `QueryResult` shape, so the project implements them with React Query and Supabase;
 mutations are plain functions returning promises, so the project wraps its own writes
 and cache invalidation.
+
+## Build a list screen
+
+Search, one Filter button holding every filter, chips for what is on, a period picker,
+sortable headers, two-line cells and a tooltip — all from one place, so a fix lands in
+every project at once.
+
+```tsx
+import {
+  SearchInput, FilterPopover, FilterPills, SortableColumnHeader, StackedCell, HintTooltip,
+} from "@hub-kit/core/data-table";
+```
+
+Filters are declared once as a `FilterField[]`, and the Filter button, its active count and
+the chips all read that one list, so they cannot disagree about what is filtering the screen.
+
+**The layout belongs to the project, the parts belong to the kit.** The route writes its own
+header, tabs, toolbar and empty states, and imports the pieces — a rule table, a filter popover,
+a range calendar — from here.
+
+Full instructions, including the filter kinds and the project wiring: `docs/data-table.md`.
 
 ## Set up a new project
 

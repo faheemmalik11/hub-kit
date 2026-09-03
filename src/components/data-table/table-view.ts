@@ -2,12 +2,24 @@ import { useMemo, useState } from "react";
 
 export type SortDirection = "asc" | "desc";
 
+export function nextSortState(
+  column: string,
+  sort: string,
+  direction: SortDirection,
+): { sort: string; direction: SortDirection } {
+  if (column === sort) {
+    return { sort, direction: direction === "asc" ? "desc" : "asc" };
+  }
+  return { sort: column, direction: "asc" };
+}
+
 export interface TableView<Row> {
   pageRows: Row[];
   sort: string;
   direction: SortDirection;
   setSort: (key: string) => void;
   setDirection: (direction: SortDirection) => void;
+  toggleSort: (key: string) => void;
   page: number;
   setPage: (page: number) => void;
   pageSize: number;
@@ -75,6 +87,12 @@ export function useTableView<Row>(
     setDirectionState(next);
     setPage(1);
   }
+  function toggleSort(key: string) {
+    const next = nextSortState(key, sort, direction);
+    setSortState(next.sort);
+    setDirectionState(next.direction);
+    setPage(1);
+  }
 
   return {
     pageRows,
@@ -82,6 +100,7 @@ export function useTableView<Row>(
     direction,
     setSort,
     setDirection,
+    toggleSort,
     page: safePage,
     setPage,
     pageSize,

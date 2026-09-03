@@ -66,3 +66,4 @@ export * from "./bank-accounts";
 export * from "./bank-import";
 export * from "./bank-sync-log";
 export * from "./document-sources";
+export * from "./approval-rules";

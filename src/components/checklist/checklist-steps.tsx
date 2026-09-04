@@ -30,7 +30,8 @@ export function ChecklistSteps({
         const Icon = STATE_ICON[step.state];
         const problem = step.state === "problem";
         const done = step.state === "done";
-        const link = !done ? step.link : undefined;
+        const hasProblemLinks = Boolean(step.problems?.some((p) => p.link));
+        const link = !done && !hasProblemLinks ? step.link : undefined;
         return (
           <li
             key={step.key}
@@ -69,7 +70,32 @@ export function ChecklistSteps({
               >
                 {step.title}
               </p>
-              <p className="mt-0.5 text-sm text-muted-foreground">{step.description}</p>
+              {step.problems && step.problems.length > 0 ? (
+                <ul className="mt-1 space-y-1">
+                  {step.problems.map((problem_item, index) => (
+                    <li key={index} className="flex gap-1.5 text-sm text-muted-foreground">
+                      <span
+                        className="mt-[7px] size-1 shrink-0 rounded-full bg-amber-600"
+                        aria-hidden
+                      />
+                      {problem_item.link ? (
+                        <Link
+                          to={problem_item.link.to}
+                          search={problem_item.link.search}
+                          hash={problem_item.link.hash}
+                          className="relative z-20 rounded-sm hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        >
+                          {problem_item.text}
+                        </Link>
+                      ) : (
+                        problem_item.text
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-0.5 text-sm text-muted-foreground">{step.description}</p>
+              )}
             </div>
             {link && (
               <div className="pointer-events-none relative z-0 flex shrink-0 items-center gap-0.5 self-center">

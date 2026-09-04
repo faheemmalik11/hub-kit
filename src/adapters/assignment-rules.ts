@@ -5,62 +5,52 @@ export type { DimensionKey, ScopeOption } from "./rule-scope";
 
 import type { DimensionKey, ScopeOption } from "./rule-scope";
 
-export interface ApproverOption {
+export interface CategoryOption {
   id: string;
-  name: string;
-
-  isActive: boolean;
-
-  roleLabel?: string;
+  label: string;
+  keywords?: string;
 }
 
-export interface ApprovalRuleView {
+export interface AssignmentRuleView {
   id: string;
 
   scope: Partial<Record<DimensionKey, string | null>>;
 
-  minAmount: number;
+  referencePattern: string | null;
 
-  steps: string[];
+  categoryId: string;
+  categoryLabel: string;
 
-  autoFinalStep?: boolean;
   isActive: boolean;
 
   createdAt: string;
   note: string | null;
 }
 
-export interface ApprovalRuleDraft {
+export interface AssignmentRuleDraft {
   id?: string;
   scope: Partial<Record<DimensionKey, string | null>>;
-  minAmount: number;
-  steps: string[];
-
-  autoFinalStep?: boolean;
+  referencePattern: string | null;
+  categoryId: string;
 }
 
-export interface RuleQuery {
+export interface AssignmentRuleQuery {
   scope: Partial<Record<DimensionKey, string | null>>;
-  amount: number;
+  reference: string;
 }
 
-export interface ApprovalRulesConfig {
+export interface AssignmentRulesConfig {
   dimensions: DimensionKey[];
-
-  maxSteps: number;
-
-  defaultChainLabels: string[];
 }
 
-export interface ApprovalRulesAdapter {
-  config: ApprovalRulesConfig;
-  rules: QueryResult<ApprovalRuleView[]>;
+export interface AssignmentRulesAdapter {
+  config: AssignmentRulesConfig;
+  rules: QueryResult<AssignmentRuleView[]>;
 
   scopeOptions: Partial<Record<DimensionKey, ScopeOption[]>>;
-  approvers: ApproverOption[];
+  categories: CategoryOption[];
 
-  approverName: (userId: string) => string | null;
-  saveRule: (draft: ApprovalRuleDraft) => Promise<void>;
+  saveRule: (draft: AssignmentRuleDraft) => Promise<void>;
   setRuleActive: (id: string, isActive: boolean) => Promise<void>;
   deleteRule: (id: string, reason: string) => Promise<void>;
   isSaving: boolean;

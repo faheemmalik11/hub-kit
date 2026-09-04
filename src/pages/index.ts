@@ -60,7 +60,6 @@ export * from "./outgoing-invoices";
 export * from "./open-items";
 export * from "./opos-whitelist";
 export * from "./manual-bookings";
-export * from "./category-rules";
 export * from "./bank-transactions";
 export * from "./bank-accounts";
 export * from "./bank-import";

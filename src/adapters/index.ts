@@ -101,16 +101,6 @@ export type { OpenItemRow, OpenItemsAdapter } from "./open-items";
 export type { OposRule, NewOposRule, OposWhitelistAdapter } from "./opos-whitelist";
 export type { ManualBookingRecord, NewManualBooking, ManualBookingsAdapter } from "./manual-bookings";
 export type {
-  BwaBlock,
-  CategoryDirection,
-  CategoryRecord,
-  NewCategory,
-  AssignmentRuleScopeChip,
-  AssignmentRuleRow,
-  NewAssignmentRule,
-  CategoryRulesAdapter,
-} from "./category-rules";
-export type {
   BankAccountRecord,
   BankTransactionRecord,
   BankMatchCandidate,
@@ -142,3 +132,11 @@ export type {
   ScopeOption,
 } from "./approval-rules";
 export { ANY_VALUE, DIMENSION_WEIGHT, PINNED_DIMENSION_WEIGHT } from "./approval-rules";
+export type {
+  AssignmentRulesAdapter,
+  AssignmentRulesConfig,
+  AssignmentRuleDraft,
+  AssignmentRuleQuery,
+  AssignmentRuleView,
+  CategoryOption,
+} from "./assignment-rules";

@@ -66,10 +66,11 @@ export function DocumentSourcesPage({
       if (!el) return;
       fokusDone.current = token;
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.classList.add("ring-2", "ring-amber-400", "ring-offset-2", "rounded-md");
+      el.classList.add("ring-2", "ring-amber-500", "ring-offset-4", "rounded-md", "bg-amber-50");
       window.setTimeout(
-        () => el.classList.remove("ring-2", "ring-amber-400", "ring-offset-2", "rounded-md"),
-        2600,
+        () =>
+          el.classList.remove("ring-2", "ring-amber-500", "ring-offset-4", "rounded-md", "bg-amber-50"),
+        5000,
       );
     }, 150);
     return () => window.clearInterval(timer);
@@ -241,6 +242,7 @@ export function DocumentSourcesPage({
         onClose={closeSourceSheet}
         onSave={adapter.saveSource}
         onRefreshOptions={adapter.refreshOptions}
+        onLoadFieldOptions={adapter.loadFieldOptions}
         onTestConnection={adapter.testConnection}
       />
     </div>

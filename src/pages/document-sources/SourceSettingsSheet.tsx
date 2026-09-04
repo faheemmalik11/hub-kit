@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import {
   ChevronDown,
@@ -57,6 +57,11 @@ export interface SourceSettingsSheetProps {
     values: Record<string, SourceFieldValue>,
   ) => Promise<void>;
   onRefreshOptions?: (sourceId: string, fieldKey: string) => void;
+  onLoadFieldOptions?: (
+    sourceId: string,
+    fieldKey: string,
+    dependsOnValue: string,
+  ) => Promise<FieldOption[]>;
   onTestConnection?: (sourceId: string) => Promise<ConnectionTestResult>;
 }
 
@@ -67,6 +72,7 @@ export function SourceSettingsSheet({
   onClose,
   onSave,
   onRefreshOptions,
+  onLoadFieldOptions,
   onTestConnection,
 }: SourceSettingsSheetProps) {
   return (
@@ -87,6 +93,7 @@ export function SourceSettingsSheet({
             onClose={onClose}
             onSave={onSave}
             onRefreshOptions={onRefreshOptions}
+            onLoadFieldOptions={onLoadFieldOptions}
             onTestConnection={onTestConnection}
           />
         )}
@@ -102,6 +109,7 @@ function SheetBody({
   onClose,
   onSave,
   onRefreshOptions,
+  onLoadFieldOptions,
   onTestConnection,
 }: SourceSettingsSheetProps & { source: DocumentSource }) {
   const initialValues = useMemo(() => {
@@ -134,6 +142,83 @@ function SheetBody({
 
   const setValue = (key: string, value: SourceFieldValue) => {
     setValues((current) => ({ ...current, [key]: value }));
+  };
+
+  const dependentFields = source.fields.filter((field) => field.dependsOn);
+  const [dynamicOptions, setDynamicOptions] = useState<
+    Record<string, { loading: boolean; error?: boolean; options: FieldOption[] }>
+  >({});
+  const loadedDependency = useRef<Record<string, string | null>>({});
+  const dependencyValuesKey = dependentFields
+    .map((field) => {
+      const raw = values[field.dependsOn as string];
+      return field.key + " " + (typeof raw === "string" ? raw.trim() : "");
+    })
+    .join("|");
+  useEffect(() => {
+    if (!onLoadFieldOptions) {
+      return;
+    }
+    for (const field of dependentFields) {
+      const raw = values[field.dependsOn as string];
+      const dependency = typeof raw === "string" && raw.trim() !== "" ? raw.trim() : null;
+      const seenBefore = field.key in loadedDependency.current;
+      if (seenBefore && loadedDependency.current[field.key] === dependency) {
+        continue;
+      }
+      loadedDependency.current[field.key] = dependency;
+      if (seenBefore) {
+        setValue(field.key, Array.isArray(field.value) ? [] : null);
+      }
+      if (!dependency) {
+        setDynamicOptions((current) => ({
+          ...current,
+          [field.key]: { loading: false, options: [] },
+        }));
+        continue;
+      }
+      setDynamicOptions((current) => ({
+        ...current,
+        [field.key]: { loading: true, options: current[field.key]?.options ?? [] },
+      }));
+      onLoadFieldOptions(source.id, field.key, dependency).then(
+        (options) => {
+          if (loadedDependency.current[field.key] !== dependency) {
+            return;
+          }
+          setDynamicOptions((current) => ({
+            ...current,
+            [field.key]: { loading: false, options },
+          }));
+        },
+        () => {
+          if (loadedDependency.current[field.key] !== dependency) {
+            return;
+          }
+          setDynamicOptions((current) => ({
+            ...current,
+            [field.key]: { loading: false, error: true, options: [] },
+          }));
+        },
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dependencyValuesKey, onLoadFieldOptions, source.id]);
+
+  const withDynamicOptions = (field: SourceField): SourceField => {
+    if (!field.dependsOn) {
+      return field;
+    }
+    const dynamic = dynamicOptions[field.key];
+    if (!dynamic) {
+      return field;
+    }
+    return {
+      ...field,
+      options: dynamic.options,
+      optionsLoading: dynamic.loading,
+      optionsError: dynamic.error ?? false,
+    };
   };
 
   const headerField = source.fields.find((field) => field.showInHeader);
@@ -172,7 +257,7 @@ function SheetBody({
   const renderField = (field: SourceField, index?: number) => (
     <FieldRow
       key={field.key}
-      field={field}
+      field={withDynamicOptions(field)}
       value={values[field.key]}
       onChange={(value) => setValue(field.key, value)}
       onRefresh={

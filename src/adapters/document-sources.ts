@@ -28,6 +28,10 @@ export interface SourceField {
   placeholder?: string;
   advanced?: boolean;
   showInHeader?: boolean;
+  // Options for this field come from the CURRENT draft value of another field: the sheet calls
+  // the adapter's loadFieldOptions whenever that value changes, and clears this field's own
+  // value because a choice made under the old dependency no longer means anything.
+  dependsOn?: string;
 }
 
 export interface SourceRun {
@@ -78,6 +82,11 @@ export interface DocumentSourcesAdapter {
     values: Record<string, SourceFieldValue>,
   ): Promise<void>;
   refreshOptions?(sourceId: string, fieldKey: string): void;
+  loadFieldOptions?(
+    sourceId: string,
+    fieldKey: string,
+    dependsOnValue: string,
+  ): Promise<FieldOption[]>;
   testConnection?(sourceId: string): Promise<ConnectionTestResult>;
   connect?(sourceId: string): void;
   addSource?(): void;

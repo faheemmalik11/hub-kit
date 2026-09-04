@@ -56,13 +56,33 @@ interface SheetContentProps
   hideClose?: boolean;
 }
 
+
+function insideBugHerd(target: EventTarget | null): boolean {
+  return (
+    target instanceof Element &&
+    target.closest("#bugherd_embed_communication_frame, bugherd-sidebar, [id^='bugherd']") !== null
+  );
+}
+
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
 >(({ side = "right", className, children, hideClose, ...props }, ref) => (
   <SheetPortal>
     <SheetOverlay />
-    <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
+    <SheetPrimitive.Content
+      ref={ref}
+      className={cn(sheetVariants({ side }), className)}
+      {...props}
+      onPointerDownOutside={(event) => {
+        if (insideBugHerd(event.target)) event.preventDefault();
+        props.onPointerDownOutside?.(event);
+      }}
+      onInteractOutside={(event) => {
+        if (insideBugHerd(event.target)) event.preventDefault();
+        props.onInteractOutside?.(event);
+      }}
+    >
       {!hideClose && (
         <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background cursor-pointer transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
           <X className="h-4 w-4" />

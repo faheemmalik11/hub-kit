@@ -1,4 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
 import {
   CheckCircle2,
   CircleHelp,
@@ -47,6 +48,32 @@ export function DocumentSourcesPage({
   const openSourceId = (hash ?? "").replace(/^#/, "");
   const openSource =
     sources.find((source) => source.id === openSourceId) ?? null;
+
+  const fokus = useRouterState({
+    select: (state) => (state.location.search as { fokus?: string }).fokus,
+  });
+  const fokusDone = useRef<string | null>(null);
+  useEffect(() => {
+    if (!fokus || !openSource) return;
+    const token = `${openSource.id}:${fokus}`;
+    if (fokusDone.current === token) return;
+    fokusDone.current = token;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      tries += 1;
+      const el = document.querySelector<HTMLElement>(`[data-fokus="${fokus}"]`);
+      if (!el && tries < 20) return;
+      window.clearInterval(timer);
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-amber-400", "ring-offset-2", "rounded-md");
+      window.setTimeout(
+        () => el.classList.remove("ring-2", "ring-amber-400", "ring-offset-2", "rounded-md"),
+        2600,
+      );
+    }, 150);
+    return () => window.clearInterval(timer);
+  }, [fokus, openSource]);
 
   const openSourceSheet = (sourceId: string) => {
     void navigate({ to: ".", hash: sourceId });

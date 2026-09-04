@@ -22,6 +22,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../../ui/collapsible";
+import { Badge } from "../../ui/badge";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { MultiCombobox } from "../../ui/multi-combobox";
@@ -223,8 +224,18 @@ function SheetBody({
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
               <StatusChip status={source.status} labels={labels} />
               {source.lastChangedBy && (
-                <span className="text-xs leading-5 text-muted-foreground">
-                  {labels.sheet.lastChangedBy(source.lastChangedBy)}
+                <span className="flex flex-wrap items-center gap-1.5 text-xs leading-5 text-muted-foreground">
+                  {labels.sheet.lastChangedBy(
+                    typeof source.lastChangedBy === "string"
+                      ? source.lastChangedBy
+                      : source.lastChangedBy.name,
+                  )}
+                  {typeof source.lastChangedBy === "object" &&
+                    source.lastChangedBy.role && (
+                      <Badge variant="outline" className="px-1.5 py-0 text-[10px] font-medium">
+                        {source.lastChangedBy.role}
+                      </Badge>
+                    )}
                 </span>
               )}
             </div>
@@ -359,7 +370,7 @@ function FieldRow({
 
   if (field.kind === "toggle") {
     return (
-      <StepShell stepNumber={stepNumber} isLastStep={isLastStep}>
+      <StepShell stepNumber={stepNumber} isLastStep={isLastStep} dataFokus={field.key}>
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <Label className="text-sm font-semibold text-foreground">
@@ -378,7 +389,7 @@ function FieldRow({
   }
 
   return (
-    <StepShell stepNumber={stepNumber} isLastStep={isLastStep}>
+    <StepShell stepNumber={stepNumber} isLastStep={isLastStep} dataFokus={field.key}>
       <div className="flex items-center justify-between gap-2">
         <Label className="text-sm font-semibold text-foreground">
           {field.label}
@@ -446,17 +457,19 @@ function FieldRow({
 function StepShell({
   stepNumber,
   isLastStep,
+  dataFokus,
   children,
 }: {
   stepNumber?: number;
   isLastStep?: boolean;
+  dataFokus?: string;
   children: ReactNode;
 }) {
   if (stepNumber === undefined) {
-    return <div>{children}</div>;
+    return <div data-fokus={dataFokus}>{children}</div>;
   }
   return (
-    <div className="flex gap-4">
+    <div className="flex gap-4" data-fokus={dataFokus}>
       <div className="flex flex-col items-center">
         <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-border bg-muted text-xs font-semibold text-foreground">
           {stepNumber}

@@ -117,6 +117,7 @@ export type {
   SourceField,
   SourceFieldValue,
   SourceIcon,
+  SourceActor,
   SourceKind,
   SourceRun,
   SourceStatus,

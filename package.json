@@ -24,7 +24,8 @@
     "./tour": "./dist/components/tour/index.js",
     "./i18n": "./dist/i18n/index.js",
     "./lib": "./dist/lib/index.js",
-    "./themes/*": "./themes/*"
+    "./themes/*": "./themes/*",
+    "./checklist": "./dist/components/checklist/index.js"
   },
   "publishConfig": {
     "access": "public"

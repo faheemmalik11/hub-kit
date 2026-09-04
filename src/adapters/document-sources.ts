@@ -36,6 +36,11 @@ export interface SourceRun {
   running?: boolean;
 }
 
+export interface SourceActor {
+  name: string;
+  role?: string;
+}
+
 export interface DocumentSource {
   id: string;
   kind: SourceKind;
@@ -45,7 +50,7 @@ export interface DocumentSource {
   status: SourceStatus;
   statusDetail: string;
   link?: string;
-  lastChangedBy?: string | null;
+  lastChangedBy?: string | SourceActor | null;
   selectedItems?: string[];
   selectedItemsLabel?: string;
   selectedItemsLoading?: boolean;

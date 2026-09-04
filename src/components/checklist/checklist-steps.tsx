@@ -12,9 +12,9 @@ const STATE_ICON: Record<ChecklistStepState, ComponentType<{ className?: string 
 };
 
 const STATE_ICON_WRAP: Record<ChecklistStepState, string> = {
-  done: "bg-emerald-50 text-emerald-600",
+  done: "bg-emerald-100 text-emerald-700",
   open: "bg-muted text-muted-foreground",
-  problem: "bg-amber-50 text-amber-600",
+  problem: "bg-amber-100 text-amber-700",
 };
 
 export function ChecklistSteps({
@@ -74,14 +74,11 @@ export function ChecklistSteps({
             {link && (
               <div className="pointer-events-none relative z-0 flex shrink-0 items-center gap-0.5 self-center">
                 {step.actionLabel && (
-                  <span className="hidden text-sm font-medium text-muted-foreground transition-colors group-hover:text-brand-dark sm:inline">
+                  <span className="hidden text-sm font-semibold text-brand-dark group-hover:underline sm:inline">
                     {step.actionLabel}
                   </span>
                 )}
-                <ChevronRight
-                  className="size-4 text-muted-foreground transition-colors group-hover:text-foreground"
-                  aria-hidden
-                />
+                <ChevronRight className="size-4 text-brand-dark" aria-hidden />
               </div>
             )}
           </li>

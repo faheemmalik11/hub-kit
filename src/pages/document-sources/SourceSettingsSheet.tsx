@@ -22,7 +22,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../../ui/collapsible";
-import { Badge } from "../../ui/badge";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { MultiCombobox } from "../../ui/multi-combobox";
@@ -232,9 +231,9 @@ function SheetBody({
                   )}
                   {typeof source.lastChangedBy === "object" &&
                     source.lastChangedBy.role && (
-                      <Badge variant="outline" className="px-1.5 py-0 text-[10px] font-medium">
+                      <span className="inline-flex items-center rounded-full bg-brand-wash px-2 py-0.5 text-[10px] font-semibold text-brand-dark">
                         {source.lastChangedBy.role}
-                      </Badge>
+                      </span>
                     )}
                 </span>
               )}

@@ -57,7 +57,6 @@ export function DocumentSourcesPage({
     if (!fokus || !openSource) return;
     const token = `${openSource.id}:${fokus}`;
     if (fokusDone.current === token) return;
-    fokusDone.current = token;
     let tries = 0;
     const timer = window.setInterval(() => {
       tries += 1;
@@ -65,6 +64,7 @@ export function DocumentSourcesPage({
       if (!el && tries < 20) return;
       window.clearInterval(timer);
       if (!el) return;
+      fokusDone.current = token;
       el.scrollIntoView({ behavior: "smooth", block: "center" });
       el.classList.add("ring-2", "ring-amber-400", "ring-offset-2", "rounded-md");
       window.setTimeout(

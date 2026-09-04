@@ -518,7 +518,7 @@ function FieldRow({
               key={id}
               className="inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs text-foreground"
             >
-              <span className="max-w-44 truncate" title={id}>
+              <span className="max-w-44 truncate" title={chipLabel(field.options, id, labels)}>
                 {chipLabel(field.options, id, labels)}
               </span>
               <button

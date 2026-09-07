@@ -4,3 +4,4 @@ export { SourceSettingsSheet } from "./SourceSettingsSheet";
 export { englishDocumentSourcesLabels } from "./labels";
 export type { DocumentSourcesLabels } from "./labels";
 export { DropboxIcon, GmailIcon, GoogleDriveIcon, MicrosoftIcon } from "./provider-icons";
+export type { DocumentSourcesRouter } from "./router";

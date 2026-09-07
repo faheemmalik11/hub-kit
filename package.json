@@ -26,7 +26,9 @@
     "./lib": "./dist/lib/index.js",
     "./themes/*": "./themes/*",
     "./checklist": "./dist/components/checklist/index.js",
-    "./checklist/tanstack": "./dist/components/checklist/tanstack-link.js"
+    "./checklist/tanstack": "./dist/components/checklist/tanstack-link.js",
+    "./pages/document-sources": "./dist/pages/document-sources/index.js",
+    "./pages/document-sources/tanstack": "./dist/pages/document-sources/tanstack-router.js"
   },
   "publishConfig": {
     "access": "public"

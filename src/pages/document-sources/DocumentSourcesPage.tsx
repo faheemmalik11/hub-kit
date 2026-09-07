@@ -1,4 +1,3 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef } from "react";
 import {
   CheckCircle2,
@@ -24,9 +23,12 @@ import {
   englishDocumentSourcesLabels,
   type DocumentSourcesLabels,
 } from "./labels";
+import type { DocumentSourcesRouter } from "./router";
 
 export interface DocumentSourcesPageProps {
   adapter: DocumentSourcesAdapter;
+  /** No default — see the comment on `DocumentSourcesRouter` for why. */
+  router: DocumentSourcesRouter;
   links?: { logs?: string; help?: string };
   labels?: DocumentSourcesLabels;
   className?: string;
@@ -34,6 +36,7 @@ export interface DocumentSourcesPageProps {
 
 export function DocumentSourcesPage({
   adapter,
+  router,
   links,
   labels = englishDocumentSourcesLabels,
   className,
@@ -43,15 +46,12 @@ export function DocumentSourcesPage({
   const canEdit = adapter.useCanEdit ? adapter.useCanEdit() : true;
   const sources = sourcesQuery.data ?? [];
 
-  const navigate = useNavigate();
-  const hash = useRouterState({ select: (state) => state.location.hash });
+  const hash = router.useHash();
   const openSourceId = (hash ?? "").replace(/^#/, "");
   const openSource =
     sources.find((source) => source.id === openSourceId) ?? null;
 
-  const fokus = useRouterState({
-    select: (state) => (state.location.search as { fokus?: string }).fokus,
-  });
+  const fokus = router.useFokusParam();
   const fokusDone = useRef<string | null>(null);
   useEffect(() => {
     if (!fokus || !openSource) return;
@@ -77,10 +77,10 @@ export function DocumentSourcesPage({
   }, [fokus, openSource]);
 
   const openSourceSheet = (sourceId: string) => {
-    void navigate({ to: ".", hash: sourceId });
+    router.openSource(sourceId);
   };
   const closeSourceSheet = () => {
-    void navigate({ to: ".", hash: "", replace: true });
+    router.closeSource();
   };
 
   return (
@@ -150,7 +150,7 @@ export function DocumentSourcesPage({
         </div>
         {links?.logs && (
           <Button asChild variant="outline" size="sm" className="shrink-0">
-            <Link to={links.logs}>{labels.viewLogs}</Link>
+            <router.Link to={links.logs}>{labels.viewLogs}</router.Link>
           </Button>
         )}
       </div>
@@ -187,6 +187,7 @@ export function DocumentSourcesPage({
               key={source.id}
               source={source}
               labels={labels}
+              LinkComponent={router.Link}
               onOpen={() => openSourceSheet(source.id)}
               onConnect={
                 adapter.connect ? () => adapter.connect?.(source.id) : undefined
@@ -252,11 +253,13 @@ export function DocumentSourcesPage({
 function SourceRow({
   source,
   labels,
+  LinkComponent,
   onOpen,
   onConnect,
 }: {
   source: DocumentSource;
   labels: DocumentSourcesLabels;
+  LinkComponent: DocumentSourcesRouter["Link"];
   onOpen: () => void;
   onConnect?: () => void;
 }) {
@@ -323,7 +326,7 @@ function SourceRow({
           </Button>
         ) : source.link && labels.open ? (
           <Button asChild variant="outline" size="sm" className="min-w-20">
-            <Link to={source.link}>{labels.open}</Link>
+            <LinkComponent to={source.link}>{labels.open}</LinkComponent>
           </Button>
         ) : null}
       </div>

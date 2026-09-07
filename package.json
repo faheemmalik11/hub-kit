@@ -25,7 +25,8 @@
     "./i18n": "./dist/i18n/index.js",
     "./lib": "./dist/lib/index.js",
     "./themes/*": "./themes/*",
-    "./checklist": "./dist/components/checklist/index.js"
+    "./checklist": "./dist/components/checklist/index.js",
+    "./checklist/tanstack": "./dist/components/checklist/tanstack-link.js"
   },
   "publishConfig": {
     "access": "public"

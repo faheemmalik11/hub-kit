@@ -1,9 +1,8 @@
-import { Link } from "@tanstack/react-router";
 import { ChevronRight, CircleCheck, Circle, TriangleAlert } from "lucide-react";
 import type { ComponentType } from "react";
 
 import { cn } from "../../lib/class-names";
-import type { ChecklistStepItem, ChecklistStepState } from "./types";
+import type { ChecklistLinkComponent, ChecklistStepItem, ChecklistStepState } from "./types";
 
 const STATE_ICON: Record<ChecklistStepState, ComponentType<{ className?: string }>> = {
   done: CircleCheck,
@@ -20,9 +19,17 @@ const STATE_ICON_WRAP: Record<ChecklistStepState, string> = {
 export function ChecklistSteps({
   steps,
   className,
+  LinkComponent,
 }: {
   steps: ChecklistStepItem[];
   className?: string;
+  /**
+   * No default: the TanStack Router `Link` this used to default to is an unconditional import,
+   * which breaks the build for any Hub without `@tanstack/react-router` installed, even though
+   * it's never rendered there. TanStack Hubs pass `TanStackChecklistLink` from
+   * `@hub-kit/core/checklist/tanstack` explicitly; other routers pass their own.
+   */
+  LinkComponent: ChecklistLinkComponent;
 }) {
   return (
     <ul className={cn("divide-y divide-border/60", className)}>
@@ -41,7 +48,7 @@ export function ChecklistSteps({
             )}
           >
             {link && (
-              <Link
+              <LinkComponent
                 to={link.to}
                 search={link.search}
                 hash={link.hash}
@@ -79,14 +86,14 @@ export function ChecklistSteps({
                         aria-hidden
                       />
                       {problem_item.link ? (
-                        <Link
+                        <LinkComponent
                           to={problem_item.link.to}
                           search={problem_item.link.search}
                           hash={problem_item.link.hash}
                           className="relative z-20 rounded-sm hover:text-foreground hover:underline focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         >
                           {problem_item.text}
-                        </Link>
+                        </LinkComponent>
                       ) : (
                         problem_item.text
                       )}

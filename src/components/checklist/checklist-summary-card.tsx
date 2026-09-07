@@ -1,8 +1,8 @@
-import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 
 import { cn } from "../../lib/class-names";
 import { ProgressRing } from "./progress-ring";
+import type { ChecklistLinkComponent } from "./types";
 
 export function ChecklistSummaryCard({
   title,
@@ -12,6 +12,7 @@ export function ChecklistSummaryCard({
   link,
   linkLabel,
   className,
+  LinkComponent,
 }: {
   title: string;
   progressLabel: string;
@@ -20,6 +21,8 @@ export function ChecklistSummaryCard({
   link?: { to: string; search?: Record<string, unknown> };
   linkLabel?: string;
   className?: string;
+  /** See the same prop on `ChecklistSteps` for why this has no default. */
+  LinkComponent: ChecklistLinkComponent;
 }) {
   return (
     <div
@@ -36,13 +39,13 @@ export function ChecklistSummaryCard({
         <p className="mt-0.5 text-sm text-muted-foreground">{progressLabel}</p>
       </div>
       {link && linkLabel && (
-        <Link
+        <LinkComponent
           to={link.to}
           search={link.search}
           className="inline-flex shrink-0 items-center gap-1 text-sm font-medium text-brand-dark hover:underline"
         >
           {linkLabel} <ArrowRight className="size-3.5" aria-hidden />
-        </Link>
+        </LinkComponent>
       )}
     </div>
   );

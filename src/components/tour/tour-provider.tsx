@@ -1,5 +1,4 @@
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
-import { useRouterState } from "@tanstack/react-router";
 
 import { englishTourLabels, type TourLabels } from "./labels";
 import { findTourTarget } from "./find-target";
@@ -13,6 +12,8 @@ const MAX_WAIT_FRAMES = 600;
 
 export interface TourProviderProps {
   tours: TourMap;
+  /** Current location pathname — the provider has no router of its own to read it from. */
+  pathname: string;
   labels?: TourLabels;
   seenStore?: TourSeenStore;
   children: ReactNode;
@@ -20,11 +21,11 @@ export interface TourProviderProps {
 
 export function TourProvider({
   tours,
+  pathname,
   labels = englishTourLabels,
   seenStore = localTourSeenStore,
   children,
 }: TourProviderProps) {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const tour = tours[pathname] ?? null;
   const [openTourId, setOpenTourId] = useState<string | null>(null);
   const [stepIndex, setStepIndex] = useState(0);

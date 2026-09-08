@@ -57,7 +57,7 @@ export function ChecklistSteps({
               />
             )}
             {problem && (
-              <span className="absolute inset-y-0 left-0 w-0.5 bg-amber-600" aria-hidden />
+              <span className="absolute inset-y-0 left-2 w-0.5 bg-amber-600" aria-hidden />
             )}
             <span
               className={cn(

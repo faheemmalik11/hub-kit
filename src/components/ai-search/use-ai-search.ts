@@ -50,13 +50,14 @@ export function useAiSearch<TableFilters>(
     if (ask.isPending) return;
     const query = value.trim();
     if (!query) return;
-    if (translated) options.resetFilters();
     setTranslated(false);
     ask.mutate(
       { query },
       {
         onSuccess: (data: AiAskResult) => {
-          if (data.offTopic || data.semantic) return;
+          if (data.offTopic) return;
+          options.resetFilters();
+          if (data.semantic) return;
           if (data.unresolvedCompanyName || data.unresolvedPropertyName) return;
           const next = options.translateFilters(data.resolvedFilters);
           if (!next) return;

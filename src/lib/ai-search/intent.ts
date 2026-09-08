@@ -19,8 +19,6 @@ function includedSections(aspects?: QueryAspects) {
   };
 }
 
-const MAX_SUPPLIERS_IN_PROMPT = 40;
-
 function selectableCompanies(config: AiSearchConfig, vocabulary: AiSearchVocabulary) {
   const unassignedCode = config.unassignedCompanyCode ?? null;
   return vocabulary.companies.filter((company) => company.code !== unassignedCode);
@@ -271,8 +269,8 @@ export function buildIntentInstructions(
           .join("\n")}\n  A range is TWO entries (gte and lte) on the same field; a reversed range ("between 19 and 7") still means the span 7..19. Number values are plain JSON numbers with the same German/English normalization as amountMin. Date values are YYYY-MM-DD. Never invent fields not listed here.`
       : "";
   const supplierGuidance = config.includeSupplierListInPrompt && include.suppliers
-    ? `\n  Known suppliers (a SAMPLE for spelling guidance only, NOT an exhaustive list — an issuer missing here is still a valid issuerLike): ${
-        vocabulary.suppliers.slice(0, MAX_SUPPLIERS_IN_PROMPT).join(", ") || "(none)"
+    ? `\n  Known suppliers (guidance only, NOT an exhaustive list — an issuer missing here is still a valid issuerLike): ${
+        vocabulary.suppliers.join(", ") || "(none)"
       }`
     : "";
   return `You extract structured search intent from a question (German or English) about invoices for a property-management accounting app. Never write SQL — only return the structured fields described by the schema.
@@ -332,8 +330,15 @@ filters: use ONLY the exact codes/names listed below, or null if the question do
   categories must be matched, not left null.`
       : ": leave it null — no category list was provided for this question; describe any topic through needsSemanticRanking/semanticTopic instead."
   }
-- nameLike: a bare entity name with NO signal whether it is a supplier or one of our companies ("invoices of nord", "give me acme invoices"): put the fragment here and leave issuerLike, companyCode and unresolvedCompanyName null — it searches suppliers AND our companies at once, so no interpretation is assumed. Ownership wording or an exact company code/name always wins over this.
-- issuerLike: a short substring of a supplier name if one is mentioned, else null (matched with ILIKE, doesn't need to be an exact/full name). When the question explicitly LABELS a word as the supplier ("X supplier", "supplier X", "Lieferant X", "from the company X" next to a separate OUR-company mention), that word IS the supplier fragment — set issuerLike=X even if X looks like an ordinary word, a negation ("nicht"), or nonsense; the label decides, and a fragment that matches nothing simply returns an honest empty result, which is correct. NEVER drop a labeled supplier from the intent: if you truly cannot express it, it goes into unsupportedAspects, because an answer that silently ignores part of the question is the worst possible outcome. When you set issuerLike, leave costCategory null unless the question names a kind of expense SEPARATELY from the supplier — the supplier already narrows the set, and stacking a category filter on top is how a real result becomes an empty one (a supplier whose name sounds like a category, e.g. an energy provider, is still just a supplier).${supplierGuidance}
+- nameLike: a bare entity name with NO signal whether it is a supplier or one of our companies ("invoices of nord", "give me acme invoices"): put the fragment here and leave issuerLike, companyCode and unresolvedCompanyName null — it searches suppliers AND our companies at once, so no interpretation is assumed. Ownership wording or an exact company code/name always wins over this. The words "supplier"/"Lieferant" or "company"/"Gesellschaft" next to the name are the signal; a name without them is ALWAYS ambiguous, however supplier-like it sounds. Contrasting worked examples — follow them EXACTLY:
+    "give me nord invoices"        → nameLike='nord', issuerLike=null (no label → both sides are searched)
+    "give me nord supplier invoices" → issuerLike='nord', nameLike=null (labeled a supplier)
+    "invoices of the nord company"   → ownership wording: exact match in the company candidates or unresolvedCompanyName='nord'
+- issuerLike: a short substring of a supplier name if one is mentioned, else null (matched with ILIKE, doesn't need to be an exact/full name). When the question explicitly LABELS a word as the supplier ("X supplier", "supplier X", "Lieferant X", "from the company X" next to a separate OUR-company mention), that word IS the supplier fragment — set issuerLike=X even if X looks like an ordinary word, a negation ("nicht"), or nonsense; the label decides, and a fragment that matches nothing simply returns an honest empty result, which is correct. NEVER drop a labeled supplier from the intent: if you truly cannot express it, it goes into unsupportedAspects, because an answer that silently ignores part of the question is the worst possible outcome. Worked examples — follow them EXACTLY:
+    "invoices of ${company} company & nicht supplier" → companyCode='${company}', issuerLike='nicht' (the word attached to "supplier" is a NAME even though it reads like German "not"; the label wins over the word's dictionary meaning)
+    "Rechnungen von Lieferant blau" → issuerLike='blau'
+    "show ${supplier} supplier invoices for ${company}" → companyCode='${company}', issuerLike='${supplier}'
+  A question that names BOTH one of our companies AND a supplier keeps BOTH filters — dropping either half answers a different question than the one asked. When you set issuerLike, leave costCategory null unless the question names a kind of expense SEPARATELY from the supplier — the supplier already narrows the set, and stacking a category filter on top is how a real result becomes an empty one (a supplier whose name sounds like a category, e.g. an energy provider, is still just a supplier).${supplierGuidance}
 - amountMin/amountMax: a threshold on ONE invoice's own gross amount, never on a total/sum the question mentions about ALL invoices combined. Worked pairs, both directions:
     "invoices above 10.000 €"    == "Rechnungen über 10.000 €"        → amountMin=10000
     "invoices under 500 €"       == "Rechnungen unter 500 €"          → amountMax=500
@@ -560,9 +565,15 @@ export async function extractIntent(
 
   const mode = config.unassignedCompanyMode ?? "collapse";
   const unassignedCode = config.unassignedCompanyCode ?? null;
-  const wantsUnassigned = f.unassignedCompany === true;
-  const namedCompany = resolveCompanyCode(config, vocabulary, f.companyCode ?? null);
-  const namedProperty = resolvePropertyCode(vocabulary, f.propertyCode ?? null);
+  const companiesAsked = aspects?.needsCompanies ?? true;
+  const propertiesAsked = aspects?.needsProperties ?? true;
+  const wantsUnassigned = companiesAsked && f.unassignedCompany === true;
+  const namedCompany = companiesAsked
+    ? resolveCompanyCode(config, vocabulary, f.companyCode ?? null)
+    : null;
+  const namedProperty = propertiesAsked
+    ? resolvePropertyCode(vocabulary, f.propertyCode ?? null)
+    : null;
   const companyCode =
     namedCompany ?? (wantsUnassigned && mode === "collapse" ? unassignedCode : null);
   const groupByValues: GroupByDimension[] = ["company", "issuer", "property", "category"];
@@ -575,12 +586,14 @@ export async function extractIntent(
           .filter((aspect): aspect is string => typeof aspect === "string" && aspect.trim() !== "")
           .slice(0, 3)
       : [],
-    unresolvedCompanyName: namedCompany
-      ? null
-      : raw.unresolvedCompanyName || (f.companyCode && !wantsUnassigned ? f.companyCode : null),
-    unresolvedPropertyName: namedProperty
-      ? null
-      : raw.unresolvedPropertyName || f.propertyCode || null,
+    unresolvedCompanyName:
+      namedCompany || !companiesAsked
+        ? null
+        : raw.unresolvedCompanyName || (f.companyCode && !wantsUnassigned ? f.companyCode : null),
+    unresolvedPropertyName:
+      namedProperty || !propertiesAsked
+        ? null
+        : raw.unresolvedPropertyName || f.propertyCode || null,
     aggregate: raw.aggregate === "sum" || raw.aggregate === "count" ? raw.aggregate : null,
     sumField:
       raw.sumField === "net" || raw.sumField === "vat" ? (raw.sumField as SumField) : "gross",
@@ -593,7 +606,11 @@ export async function extractIntent(
       companyCode,
       unassignedCompany: mode === "parameter" && !namedCompany ? wantsUnassigned : false,
       assignedCompany:
-        f.assignedCompany === true && !namedCompany && !wantsUnassigned && companyCode === null,
+        companiesAsked &&
+        f.assignedCompany === true &&
+        !namedCompany &&
+        !wantsUnassigned &&
+        companyCode === null,
       propertyCode: namedProperty,
       costCategory: resolveCategory(vocabulary, f.costCategory ?? null),
       issuerLike: f.issuerLike || null,

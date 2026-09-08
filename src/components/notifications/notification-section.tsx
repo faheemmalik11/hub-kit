@@ -95,7 +95,12 @@ export function NotificationSection({
 
   if (flat) {
     return (
-      <section className={cn("border-border [&:not(:first-child)]:border-t", className)}>
+      <section
+        className={cn(
+          "overflow-hidden rounded-xl border border-border bg-card [&:not(:first-child)]:mt-4",
+          className,
+        )}
+      >
         {header}
         <div className="divide-y divide-border/60">{list}</div>
       </section>

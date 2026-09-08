@@ -37,8 +37,9 @@ export function ChecklistSteps({
         const Icon = STATE_ICON[step.state];
         const problem = step.state === "problem";
         const done = step.state === "done";
-        const hasProblemLinks = Boolean(step.problems?.some((p) => p.link));
-        const link = !done && !hasProblemLinks ? step.link : undefined;
+        // A step with per-problem links still gets its own row link and action: those bullets sit
+        // at z-20, above the row's z-10 overlay, so each stays individually clickable.
+        const link = !done ? step.link : undefined;
         return (
           <li
             key={step.key}

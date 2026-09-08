@@ -274,7 +274,9 @@ function SourceRow({
       : labels.edit;
 
   return (
-    <div className="flex items-start gap-4 p-4">
+    // Anchored per source so a tour can point at one row: the mailbox that feeds the Hub, or the
+    // filing that everything lands in, rather than at the list as a whole.
+    <div data-tour={`document-source-${source.id}`} className="flex items-start gap-4 p-4">
       <SourceIconBadge icon={source.icon} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">

@@ -13,3 +13,5 @@ export { englishErrorStateLabels, englishPaginationLabels } from "../components/
 export { englishFormatters } from "../lib/formatters";
 export { englishOverviewLabels } from "../pages/overview/labels";
 export { englishTourLabels } from "../components/tour/labels";
+export { englishAiSearchLabels, type AiSearchLabels } from "../components/ai-search/labels";
+export { englishFilterGroupLabels, type FilterGroupLabels } from "../components/filters/labels";

@@ -67,7 +67,15 @@ export function TourOverlay() {
     let attempts = 0;
     const waitForTarget = () => {
       attempts += 1;
-      if (findTourTarget(target)) {
+      const element = findTourTarget(target);
+      if (element) {
+        // Bring the step into view before measuring. A tour opened while the reader is halfway
+        // down a long screen used to highlight something off-screen: the page dimmed and nothing
+        // visible was marked. Only scrolls when the element is not already fully in view, so a
+        // step that is on screen does not jump the page under the reader.
+        const box = element.getBoundingClientRect();
+        const offScreen = box.top < 0 || box.bottom > window.innerHeight;
+        if (offScreen) element.scrollIntoView({ behavior: "smooth", block: "center" });
         measure();
         return;
       }

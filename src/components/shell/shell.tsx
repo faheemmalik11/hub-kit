@@ -514,7 +514,7 @@ function ShellNavGroupItem({
                   closeOnMobile={closeOnMobile}
                 />
               ) : (
-                <SidebarMenuSubItem key={child.key}>
+                <SidebarMenuSubItem key={child.key} data-tour={child.tourId}>
                   <SidebarMenuSubButton asChild isActive={isActive(child.to)}>
                     <Link
                       to={child.to}
@@ -558,7 +558,7 @@ function ShellNavSubGroup({
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} className="group/subcollapsible">
-      <SidebarMenuSubItem>
+      <SidebarMenuSubItem data-tour={item.tourId}>
         <CollapsibleTrigger asChild>
           <SidebarMenuSubButton className="cursor-pointer">
             <item.icon className="size-4" />

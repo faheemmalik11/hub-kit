@@ -1,6 +1,6 @@
 {
   "name": "@hub-kit/core",
-  "version": "0.3.57",
+  "version": "0.3.58",
   "description": "Shared pages, components and theme system for all Hub projects.",
   "type": "module",
   "files": [
@@ -27,7 +27,8 @@
     "./themes/*": "./themes/*",
     "./checklist": "./dist/components/checklist/index.js",
     "./checklist/tanstack": "./dist/components/checklist/tanstack-link.js",
-    "./ai-search": "./dist/lib/ai-search/index.js",
+    "./ai-search-sql": "./dist/lib/ai-search-sql/index.js",
+    "./ai-search-sql/ui": "./dist/components/ai-search-sql/index.js",
     "./ai-search/ui": "./dist/components/ai-search/index.js",
     "./filters": "./dist/components/filters/index.js",
     "./pages/document-sources": "./dist/pages/document-sources/index.js",

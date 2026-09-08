@@ -4,10 +4,22 @@ import type {
   AnswerLanguage,
   ConditionOperator,
   GroupByDimension,
+  QueryAspects,
   SearchCondition,
   SearchIntent,
   SumField,
 } from "./types";
+
+function includedSections(aspects?: QueryAspects) {
+  return {
+    companies: aspects?.needsCompanies ?? true,
+    properties: aspects?.needsProperties ?? true,
+    categories: aspects?.needsCategories ?? true,
+    suppliers: aspects?.needsSuppliers ?? true,
+  };
+}
+
+const MAX_SUPPLIERS_IN_PROMPT = 40;
 
 function selectableCompanies(config: AiSearchConfig, vocabulary: AiSearchVocabulary) {
   const unassignedCode = config.unassignedCompanyCode ?? null;
@@ -30,7 +42,12 @@ function propertyCandidateList(vocabulary: AiSearchVocabulary): string {
   );
 }
 
-export function buildIntentSchema(config: AiSearchConfig, vocabulary: AiSearchVocabulary) {
+export function buildIntentSchema(
+  config: AiSearchConfig,
+  vocabulary: AiSearchVocabulary,
+  aspects?: QueryAspects,
+) {
+  const include = includedSections(aspects);
   const companyCodes = selectableCompanies(config, vocabulary).map((company) => company.code);
   const conditionFields = config.conditionFields ?? [];
   const conditionsProperty =
@@ -64,7 +81,7 @@ export function buildIntentSchema(config: AiSearchConfig, vocabulary: AiSearchVo
         properties: {
           companyCode: {
             type: ["string", "null"],
-            enum: [...companyCodes, null],
+            ...(include.companies ? { enum: [...companyCodes, null] } : {}),
             description:
               "null unless the question names one of the exact candidates below, by code or by " +
               "full/partial name. NEVER pick the nearest-sounding code as a guess — an unfamiliar " +
@@ -84,9 +101,14 @@ export function buildIntentSchema(config: AiSearchConfig, vocabulary: AiSearchVo
           },
           propertyCode: {
             type: ["string", "null"],
-            enum: [...vocabulary.properties.map((property) => property.code), null],
+            ...(include.properties
+              ? { enum: [...vocabulary.properties.map((property) => property.code), null] }
+              : {}),
           },
-          costCategory: { type: ["string", "null"], enum: [...vocabulary.categories, null] },
+          costCategory: {
+            type: ["string", "null"],
+            ...(include.categories ? { enum: [...vocabulary.categories, null] } : {}),
+          },
           issuerLike: { type: ["string", "null"] },
           nameLike: {
             type: ["string", "null"],
@@ -233,7 +255,9 @@ export function buildIntentSchema(config: AiSearchConfig, vocabulary: AiSearchVo
 export function buildIntentInstructions(
   config: AiSearchConfig,
   vocabulary: AiSearchVocabulary,
+  aspects?: QueryAspects,
 ): string {
+  const include = includedSections(aspects);
   const now = config.now ? config.now() : new Date();
   const today = now.toISOString().slice(0, 10);
   const company = config.promptExamples.companyCode;
@@ -246,9 +270,9 @@ export function buildIntentInstructions(
           .map((field) => `    ${field.key} (${field.type}): ${field.description}`)
           .join("\n")}\n  A range is TWO entries (gte and lte) on the same field; a reversed range ("between 19 and 7") still means the span 7..19. Number values are plain JSON numbers with the same German/English normalization as amountMin. Date values are YYYY-MM-DD. Never invent fields not listed here.`
       : "";
-  const supplierGuidance = config.includeSupplierListInPrompt
-    ? `\n  Known suppliers (guidance only, NOT an exhaustive list — an issuer missing here is still a valid issuerLike): ${
-        vocabulary.suppliers.join(", ") || "(none)"
+  const supplierGuidance = config.includeSupplierListInPrompt && include.suppliers
+    ? `\n  Known suppliers (a SAMPLE for spelling guidance only, NOT an exhaustive list — an issuer missing here is still a valid issuerLike): ${
+        vocabulary.suppliers.slice(0, MAX_SUPPLIERS_IN_PROMPT).join(", ") || "(none)"
       }`
     : "";
   return `You extract structured search intent from a question (German or English) about invoices for a property-management accounting app. Never write SQL — only return the structured fields described by the schema.
@@ -266,28 +290,30 @@ The language a question is asked in must never change the answer.
 Today's date is ${today} — resolve relative German date phrases ("letzten Monat", "dieses Jahr") against it. Resolve a relative period to its FULL calendar range, identically in both languages: "this year"/"dieses Jahr" = 1 January to 31 December of the current year, "last year"/"letztes Jahr" = the whole previous year, "last month"/"letzten Monat" = the whole previous month, "this month"/"diesen Monat" = the whole current month. Never cut a range short at today's date.
 
 filters: use ONLY the exact codes/names listed below, or null if the question doesn't mention that dimension. Never invent a code/name not listed here.
-- companyCode candidates: ${companyCandidateList(config, vocabulary)}
+- companyCode${include.companies ? ` candidates: ${companyCandidateList(config, vocabulary)}` : ": set it to the exact company name/code from the question when ownership wording marks it as one of OUR companies; it is verified against the real company list afterwards."}
   These are OUR OWN legal entities (the invoice recipient), never the supplier who issued the
   invoice. A supplier/issuer name in the question (an energy provider, a telecom, a notary, a
   craftsman) belongs in issuerLike and must leave companyCode null — set companyCode only when the
-  question actually names one of the entities listed above, by code or by name. Company
-  codes/names not in this list at all — including ones that merely sound or look similar to a
-  real one — must ALSO leave companyCode null, never resolved to the closest match. When the
+  question actually names one of OUR entities, by code or by name.${include.companies ? ` Company
+  codes/names not in the candidate list at all — including ones that merely sound or look similar
+  to a real one — must ALSO leave companyCode null, never resolved to the closest match. When the
   question clearly treats such an unknown name as one of OUR companies, additionally put the
-  exact name into unresolvedCompanyName so the answer can say it is not a known company.
+  exact name into unresolvedCompanyName so the answer can say it is not a known company.` : ""}
   AMBIGUITY RULE: a bare name with no ownership wording — "invoices of X", "Rechnungen von X",
-  "give me X invoices" — is a SUPPLIER search: set issuerLike=X, leave companyCode and
-  unresolvedCompanyName null, even if X vaguely resembles part of a company name above. Only
-  ownership wording ("belonging to X", "of the X company", "der Gesellschaft X") or an exact
-  code/name match makes it a company reference.
+  "give me X invoices" — goes into nameLike (searched against suppliers AND our companies at
+  once), leaving companyCode, issuerLike and unresolvedCompanyName null. Only ownership wording
+  ("belonging to X", "of the X company", "der Gesellschaft X") or an exact code/name match makes
+  it a company reference; only explicit supplier wording makes it issuerLike.
 - assignedCompany: true ONLY when the question asks for invoices that ARE assigned to some company without naming which one ("invoices belonging to a company", "Rechnungen mit Gesellschaft", "die einer Gesellschaft zugeordnet sind"). false when a specific company is named (companyCode already covers it), when the question asks for unassigned invoices, and when companies are not mentioned.
 - unassignedCompany: true ONLY when the question asks for invoices that belong to no company at all
   ("nicht zugeordnet", "keiner Gesellschaft zugeordnet", "ohne Gesellschaft", "unassigned", "not
   assigned to a company"), false otherwise — including when the question simply doesn't mention a
   company. Being unassigned says nothing about payment: never set paymentState because of it.
-- propertyCode candidates: ${propertyCandidateList(vocabulary)}
-  Same rule as companyCode: null unless it exactly matches one of these, never a guessed near-miss.
-- costCategory candidates: ${categoryList}
+- propertyCode${include.properties ? ` candidates: ${propertyCandidateList(vocabulary)}
+  Same rule as companyCode: null unless it exactly matches one of these, never a guessed near-miss.` : `: the exact property name/code from the question when property wording ("Objekt X", "the X property") marks it as one of our properties; it is verified against the real property list afterwards. Never guess.`}
+- costCategory${
+    include.categories
+      ? ` candidates: ${categoryList}
   Some candidates are near-synonym pairs describing OPPOSITE directions (e.g. "Zinserträge"
   [interest income] vs. "Zinsaufwand" [interest expense], "Mieteinnahmen" vs. "Mietaufwand") —
   match the direction the question actually implies: "bezahlt"/"Kosten"/"Aufwand" → the expense
@@ -303,9 +329,11 @@ filters: use ONLY the exact codes/names listed below, or null if the question do
   The candidates are German but the question may be English: match on MEANING, translating first
   (electricity → "Energie", cleaning → "Reinigung", insurance → "Versicherung"), so the same
   question gives the same category in both languages. A topic that plainly IS one of the listed
-  categories must be matched, not left null.
+  categories must be matched, not left null.`
+      : ": leave it null — no category list was provided for this question; describe any topic through needsSemanticRanking/semanticTopic instead."
+  }
 - nameLike: a bare entity name with NO signal whether it is a supplier or one of our companies ("invoices of nord", "give me acme invoices"): put the fragment here and leave issuerLike, companyCode and unresolvedCompanyName null — it searches suppliers AND our companies at once, so no interpretation is assumed. Ownership wording or an exact company code/name always wins over this.
-- issuerLike: a short substring of a supplier name if one is mentioned, else null (matched with ILIKE, doesn't need to be an exact/full name). When you set issuerLike, leave costCategory null unless the question names a kind of expense SEPARATELY from the supplier — the supplier already narrows the set, and stacking a category filter on top is how a real result becomes an empty one (a supplier whose name sounds like a category, e.g. an energy provider, is still just a supplier).${supplierGuidance}
+- issuerLike: a short substring of a supplier name if one is mentioned, else null (matched with ILIKE, doesn't need to be an exact/full name). When the question explicitly LABELS a word as the supplier ("X supplier", "supplier X", "Lieferant X", "from the company X" next to a separate OUR-company mention), that word IS the supplier fragment — set issuerLike=X even if X looks like an ordinary word, a negation ("nicht"), or nonsense; the label decides, and a fragment that matches nothing simply returns an honest empty result, which is correct. NEVER drop a labeled supplier from the intent: if you truly cannot express it, it goes into unsupportedAspects, because an answer that silently ignores part of the question is the worst possible outcome. When you set issuerLike, leave costCategory null unless the question names a kind of expense SEPARATELY from the supplier — the supplier already narrows the set, and stacking a category filter on top is how a real result becomes an empty one (a supplier whose name sounds like a category, e.g. an energy provider, is still just a supplier).${supplierGuidance}
 - amountMin/amountMax: a threshold on ONE invoice's own gross amount, never on a total/sum the question mentions about ALL invoices combined. Worked pairs, both directions:
     "invoices above 10.000 €"    == "Rechnungen über 10.000 €"        → amountMin=10000
     "invoices under 500 €"       == "Rechnungen unter 500 €"          → amountMax=500
@@ -405,6 +433,39 @@ export function resolveRelativePeriod(
   }
 }
 
+function resolveCompanyCode(
+  config: AiSearchConfig,
+  vocabulary: AiSearchVocabulary,
+  value: string | null,
+): string | null {
+  if (!value) return null;
+  const wanted = value.trim().toLowerCase();
+  if (!wanted) return null;
+  const match = selectableCompanies(config, vocabulary).find(
+    (company) =>
+      company.code.toLowerCase() === wanted || (company.name ?? "").toLowerCase() === wanted,
+  );
+  return match ? match.code : null;
+}
+
+function resolvePropertyCode(vocabulary: AiSearchVocabulary, value: string | null): string | null {
+  if (!value) return null;
+  const wanted = value.trim().toLowerCase();
+  if (!wanted) return null;
+  const match = vocabulary.properties.find(
+    (property) =>
+      property.code.toLowerCase() === wanted || (property.name ?? "").toLowerCase() === wanted,
+  );
+  return match ? match.code : null;
+}
+
+function resolveCategory(vocabulary: AiSearchVocabulary, value: string | null): string | null {
+  if (!value) return null;
+  const wanted = value.trim().toLowerCase();
+  if (!wanted) return null;
+  return vocabulary.categories.find((category) => category.toLowerCase() === wanted) ?? null;
+}
+
 const OPERATORS_BY_TYPE: Record<string, ConditionOperator[]> = {
   number: ["eq", "neq", "gte", "lte"],
   date: ["eq", "neq", "gte", "lte"],
@@ -482,12 +543,13 @@ export async function extractIntent(
   config: AiSearchConfig,
   vocabulary: AiSearchVocabulary,
   query: string,
+  aspects?: QueryAspects,
 ): Promise<SearchIntent> {
   const raw = (await config.intentModel.completeJson({
-    instructions: buildIntentInstructions(config, vocabulary),
+    instructions: buildIntentInstructions(config, vocabulary, aspects),
     input: query,
     schemaName: "invoice_search_intent",
-    schema: buildIntentSchema(config, vocabulary),
+    schema: buildIntentSchema(config, vocabulary, aspects),
     temperature: 0,
   })) as RawIntent;
 
@@ -495,12 +557,12 @@ export async function extractIntent(
   const now = config.now ? config.now() : new Date();
   const period = resolveRelativePeriod(f.relativePeriod ?? null, now);
   const conditions = validateConditions(config, f.conditions);
-  const selectableCodes = selectableCompanies(config, vocabulary).map((company) => company.code);
+
   const mode = config.unassignedCompanyMode ?? "collapse";
   const unassignedCode = config.unassignedCompanyCode ?? null;
   const wantsUnassigned = f.unassignedCompany === true;
-  const namedCompany =
-    f.companyCode && selectableCodes.includes(f.companyCode) ? f.companyCode : null;
+  const namedCompany = resolveCompanyCode(config, vocabulary, f.companyCode ?? null);
+  const namedProperty = resolvePropertyCode(vocabulary, f.propertyCode ?? null);
   const companyCode =
     namedCompany ?? (wantsUnassigned && mode === "collapse" ? unassignedCode : null);
   const groupByValues: GroupByDimension[] = ["company", "issuer", "property", "category"];
@@ -513,11 +575,12 @@ export async function extractIntent(
           .filter((aspect): aspect is string => typeof aspect === "string" && aspect.trim() !== "")
           .slice(0, 3)
       : [],
-    unresolvedCompanyName: namedCompany ? null : raw.unresolvedCompanyName || null,
-    unresolvedPropertyName:
-      f.propertyCode && vocabulary.properties.some((p) => p.code === f.propertyCode)
-        ? null
-        : raw.unresolvedPropertyName || null,
+    unresolvedCompanyName: namedCompany
+      ? null
+      : raw.unresolvedCompanyName || (f.companyCode && !wantsUnassigned ? f.companyCode : null),
+    unresolvedPropertyName: namedProperty
+      ? null
+      : raw.unresolvedPropertyName || f.propertyCode || null,
     aggregate: raw.aggregate === "sum" || raw.aggregate === "count" ? raw.aggregate : null,
     sumField:
       raw.sumField === "net" || raw.sumField === "vat" ? (raw.sumField as SumField) : "gross",
@@ -531,12 +594,8 @@ export async function extractIntent(
       unassignedCompany: mode === "parameter" && !namedCompany ? wantsUnassigned : false,
       assignedCompany:
         f.assignedCompany === true && !namedCompany && !wantsUnassigned && companyCode === null,
-      propertyCode:
-        f.propertyCode && vocabulary.properties.some((p) => p.code === f.propertyCode)
-          ? f.propertyCode
-          : null,
-      costCategory:
-        f.costCategory && vocabulary.categories.includes(f.costCategory) ? f.costCategory : null,
+      propertyCode: namedProperty,
+      costCategory: resolveCategory(vocabulary, f.costCategory ?? null),
       issuerLike: f.issuerLike || null,
       nameLike: namedCompany ? null : f.nameLike || null,
       dateFrom: f.dateFrom || period?.from || null,

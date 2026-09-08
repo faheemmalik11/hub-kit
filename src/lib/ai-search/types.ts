@@ -41,6 +41,15 @@ export type SumField = "gross" | "net" | "vat";
 export type GroupByDimension = "company" | "issuer" | "property" | "category";
 export type AnswerLanguage = "de" | "en";
 
+export interface QueryAspects {
+  needsCompanies: boolean;
+  needsProperties: boolean;
+  needsCategories: boolean;
+  needsSuppliers: boolean;
+  offTopic: boolean;
+  language: AnswerLanguage;
+}
+
 export interface SearchIntent {
   filters: InvoiceFilters;
   unresolvedCompanyName: string | null;
@@ -203,6 +212,7 @@ export interface AiSearchConfig {
   vocabulary(): Promise<AiSearchVocabulary>;
   executor: AiSearchExecutor;
   intentModel: ModelJsonClient;
+  classifierModel?: ModelJsonClient;
   synthesisModel: ModelJsonClient;
   embeddings: EmbeddingClient;
   statusValues: string[];

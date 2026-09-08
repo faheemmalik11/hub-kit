@@ -18,6 +18,7 @@ export type {
   ModelJsonClient,
   ModelJsonRequest,
   PaymentContext,
+  QueryAspects,
   RetrievalResult,
   SearchIntent,
   SumField,
@@ -29,6 +30,7 @@ export {
   openAiModelClient,
 } from "./model";
 export { buildIntentInstructions, buildIntentSchema, extractIntent, resolveRelativePeriod } from "./intent";
+export { classifyQueryAspects } from "./classify";
 export { buildWhereClause, describeResolvedFilters } from "./describe";
 export { runRetrieval } from "./retrieval";
 export {

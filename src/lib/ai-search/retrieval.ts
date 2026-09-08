@@ -1,3 +1,4 @@
+import { classifyQueryAspects } from "./classify";
 import { buildWhereClause } from "./describe";
 import { extractIntent } from "./intent";
 import type {
@@ -10,8 +11,29 @@ import type {
   InvoiceMatch,
   InvoiceSearchRow,
   PaymentContext,
+  QueryAspects,
   RetrievalResult,
 } from "./types";
+
+function emptyFilters(): InvoiceFilters {
+  return {
+    conditions: [],
+    companyCode: null,
+    unassignedCompany: false,
+    assignedCompany: false,
+    propertyCode: null,
+    costCategory: null,
+    issuerLike: null,
+    nameLike: null,
+    dateFrom: null,
+    dateTo: null,
+    status: null,
+    reviewState: null,
+    paymentState: null,
+    amountMin: null,
+    amountMax: null,
+  };
+}
 
 const DEFAULT_SEARCH_LIMIT = 15;
 const DEFAULT_MIN_SEMANTIC_SIMILARITY = 0.3;
@@ -113,12 +135,33 @@ export async function runRetrieval(
   config: AiSearchConfig,
   vocabulary: AiSearchVocabulary,
   query: string,
+  knownAspects?: QueryAspects,
 ): Promise<RetrievalResult> {
   const limit = config.searchLimit ?? DEFAULT_SEARCH_LIMIT;
   const table = config.sqlPreviewTable;
   const similarityFloor = config.minSemanticSimilarity ?? DEFAULT_MIN_SEMANTIC_SIMILARITY;
 
-  const intent = await extractIntent(config, vocabulary, query);
+  const aspects = knownAspects ?? (await classifyQueryAspects(config, query));
+  if (aspects.offTopic) {
+    return {
+      unresolvedCompanyName: null,
+      unresolvedPropertyName: null,
+      unsupportedAspects: [],
+      matches: [],
+      sql: "-- off-topic question: no query was run",
+      aggregate: null,
+      resolvedFilters: emptyFilters(),
+      language: aspects.language,
+      totalMatches: 0,
+      semantic: false,
+      paymentContext: null,
+      filteredTotals: null,
+      offTopic: true,
+      broad: false,
+    };
+  }
+
+  const intent = await extractIntent(config, vocabulary, query, aspects);
   const unresolvedCompanyName = intent.unresolvedCompanyName;
   const unresolvedPropertyName = intent.unresolvedPropertyName;
   const unsupportedAspects = intent.unsupportedAspects;

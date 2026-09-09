@@ -19,6 +19,7 @@ import {
   BreadcrumbSeparator,
 } from "../../ui/breadcrumb";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../ui/collapsible";
+import { HintTooltip } from "../../ui/hint-tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,6 +44,7 @@ import {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
+  SidebarResizeHandle,
   SidebarTrigger,
   useSidebar,
 } from "../../ui/sidebar";
@@ -182,7 +184,9 @@ export function ShellFooterGroup({
                       }}
                     >
                       <child.icon className="size-4" />
-                      <span>{child.label}</span>
+                      <HintTooltip label={child.label}>
+                        <span className="truncate">{child.label}</span>
+                      </HintTooltip>
                     </Link>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
@@ -195,7 +199,9 @@ export function ShellFooterGroup({
               current page carries the highlight. */}
           <SidebarMenuButton>
             <Icon />
-            <span>{label}</span>
+            <HintTooltip label={label}>
+              <span className="truncate">{label}</span>
+            </HintTooltip>
             {/* Same chevron behaviour as the nav groups above: down while closed, flipped up
                 once open. Consistency with the rest of the sidebar beats hinting the direction
                 the panel happens to grow in. */}
@@ -395,7 +401,9 @@ export function ShellNavMenu({
                   onClick={closeOnMobile}
                 >
                   <item.icon />
-                  <span>{item.label}</span>
+                  <HintTooltip label={item.label}>
+                    <span className="truncate">{item.label}</span>
+                  </HintTooltip>
                 </Link>
               </SidebarMenuButton>
               {showBadge && <ShellBadgePill badge={badge} />}
@@ -470,6 +478,7 @@ export function ShellSidebar({
       {footer && <SidebarFooter className="gap-2">{footer}</SidebarFooter>}
 
       <SidebarRail />
+      <SidebarResizeHandle />
     </Sidebar>
   );
 }
@@ -498,7 +507,9 @@ function ShellNavGroupItem({
         <CollapsibleTrigger asChild>
           <SidebarMenuButton>
             <item.icon />
-            <span>{item.label}</span>
+            <HintTooltip label={item.label}>
+              <span className="truncate">{item.label}</span>
+            </HintTooltip>
             <ChevronDown className="ml-auto size-4 shrink-0 opacity-60 transition-transform group-data-[state=open]/collapsible:rotate-180" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
@@ -522,7 +533,9 @@ function ShellNavGroupItem({
                       onClick={closeOnMobile}
                     >
                       <child.icon className="size-4" />
-                      <span>{child.label}</span>
+                      <HintTooltip label={child.label}>
+                        <span className="truncate">{child.label}</span>
+                      </HintTooltip>
                     </Link>
                   </SidebarMenuSubButton>
                 </SidebarMenuSubItem>
@@ -562,7 +575,9 @@ function ShellNavSubGroup({
         <CollapsibleTrigger asChild>
           <SidebarMenuSubButton className="cursor-pointer">
             <item.icon className="size-4" />
-            <span>{item.label}</span>
+            <HintTooltip label={item.label}>
+              <span className="truncate">{item.label}</span>
+            </HintTooltip>
             <ChevronDown className="ml-auto size-4 shrink-0 opacity-60 transition-transform group-data-[state=open]/subcollapsible:rotate-180" />
           </SidebarMenuSubButton>
         </CollapsibleTrigger>
@@ -577,7 +592,9 @@ function ShellNavSubGroup({
                     onClick={closeOnMobile}
                   >
                     <child.icon className="size-4" />
-                    <span>{child.label}</span>
+                    <HintTooltip label={child.label}>
+                      <span className="truncate">{child.label}</span>
+                    </HintTooltip>
                   </Link>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>

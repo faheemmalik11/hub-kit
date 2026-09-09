@@ -14,10 +14,22 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "./tool
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
-const SIDEBAR_WIDTH = "16rem";
+const SIDEBAR_WIDTH_DEFAULT = 256; // px, same as the old fixed "16rem"
+const SIDEBAR_WIDTH_MIN = 200; // px, narrow enough to still read every label
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
+// The user's dragged width, independent of the cookie above that stores open/collapsed. Kept
+// separate on purpose: collapsing the sidebar must never lose or corrupt the expanded width the
+// user picked, and it never touches this key -- collapsed width always comes from the untouched
+// --sidebar-width-icon var instead.
+const SIDEBAR_WIDTH_STORAGE_KEY = "sidebar_width";
+
+function readStoredWidth(): number {
+  if (typeof window === "undefined") return SIDEBAR_WIDTH_DEFAULT;
+  const stored = Number(window.localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY));
+  return Number.isFinite(stored) && stored > 0 ? stored : SIDEBAR_WIDTH_DEFAULT;
+}
 
 type SidebarContextProps = {
   state: "expanded" | "collapsed";
@@ -27,6 +39,10 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
   toggleSidebar: () => void;
+  /** The expanded sidebar's width in px. Ignored while collapsed. */
+  width: number;
+  /** Clamps to [SIDEBAR_WIDTH_MIN, half the viewport] and saves to localStorage. */
+  setWidth: (width: number) => void;
 };
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
@@ -62,6 +78,23 @@ const SidebarProvider = React.forwardRef<
   ) => {
     const isMobile = useIsMobile();
     const [openMobile, setOpenMobile] = React.useState(false);
+
+    // Starts at the default and reads localStorage only after mount, since it isn't available
+    // during server rendering -- the same reasoning SIDEBAR_COOKIE_NAME sidesteps by living in a
+    // cookie instead. A one-frame flash at the default width is the accepted trade-off.
+    const [width, setWidthState] = React.useState(SIDEBAR_WIDTH_DEFAULT);
+    React.useEffect(() => {
+      setWidthState(readStoredWidth());
+    }, []);
+
+    const setWidth = React.useCallback((value: number) => {
+      const max = typeof window === "undefined" ? value : window.innerWidth / 2;
+      const clamped = Math.min(Math.max(value, SIDEBAR_WIDTH_MIN), max);
+      setWidthState(clamped);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(clamped));
+      }
+    }, []);
 
     const [_open, _setOpen] = React.useState(defaultOpen);
     const open = openProp ?? _open;
@@ -106,8 +139,10 @@ const SidebarProvider = React.forwardRef<
         openMobile,
         setOpenMobile,
         toggleSidebar,
+        width,
+        setWidth,
       }),
-      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar],
+      [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar, width, setWidth],
     );
 
     return (
@@ -116,7 +151,7 @@ const SidebarProvider = React.forwardRef<
           <div
             style={
               {
-                "--sidebar-width": SIDEBAR_WIDTH,
+                "--sidebar-width": `${width}px`,
                 "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
                 ...style,
               } as React.CSSProperties
@@ -296,6 +331,53 @@ const SidebarRail = React.forwardRef<HTMLButtonElement, React.ComponentProps<"bu
   },
 );
 SidebarRail.displayName = "SidebarRail";
+
+/**
+ * A drag handle on the sidebar's edge that resizes it, capped at half the viewport width.
+ *
+ * A separate element from SidebarRail on purpose: the rail already owns click-to-toggle, and
+ * telling a click from a one-pixel drag on the same element is exactly the kind of cleverness
+ * this kit's own rules ask us to avoid. Only rendered while expanded on desktop -- resizing a
+ * collapsed icon rail, or a mobile sheet, is not a thing to support.
+ */
+const SidebarResizeHandle = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
+  ({ className, ...props }, ref) => {
+    const { state, isMobile, setWidth } = useSidebar();
+    const dragging = React.useRef(false);
+
+    if (state !== "expanded" || isMobile) return null;
+
+    // Left-side sidebar only: its own left edge sits at the window's x=0, so the pointer's own
+    // clientX already is the width to apply. A right-side sidebar would need
+    // window.innerWidth - clientX instead, left out until a Hub actually docks one there.
+    return (
+      <div
+        ref={ref}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        onPointerDown={(event) => {
+          dragging.current = true;
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          if (!dragging.current) return;
+          setWidth(event.clientX);
+        }}
+        onPointerUp={(event) => {
+          dragging.current = false;
+          event.currentTarget.releasePointerCapture(event.pointerId);
+        }}
+        className={cn(
+          "absolute inset-y-0 right-0 z-20 hidden w-1 cursor-col-resize touch-none hover:bg-sidebar-border active:bg-sidebar-border sm:block",
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
+);
+SidebarResizeHandle.displayName = "SidebarResizeHandle";
 
 const SidebarInset = React.forwardRef<HTMLDivElement, React.ComponentProps<"main">>(
   ({ className, ...props }, ref) => {
@@ -721,6 +803,7 @@ export {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
+  SidebarResizeHandle,
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,

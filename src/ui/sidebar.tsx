@@ -342,9 +342,15 @@ SidebarRail.displayName = "SidebarRail";
  * capture instead, and vice versa ("expansion not working fine"). One component now owns the
  * whole strip, and there is exactly one visible toggle affordance, never two: CircleArrowRight
  * (arrow pointing OUT of the sidebar) to expand while collapsed, CircleArrowLeft (arrow pointing
- * IN) to collapse while expanded. The drag strip is split into a segment above and a segment below
- * that button so dragging still works from anywhere else on the line -- no guessing between a
- * click and a drag on the same pixels, because they are no longer the same pixels.
+ * IN) to collapse while expanded. Sits exactly on the header's bottom border -- the same point
+ * where the sidebar's own vertical edge crosses that horizontal line -- so it reads as one badge
+ * pinned to the corner, not a control floating inside either the header row or the nav list below
+ * it. ShellHeader no longer renders its own SidebarTrigger for the same reason: two toggle
+ * affordances stacked at that corner is what looked broken in the first place. The drag strip
+ * starts below the button's clearance so dragging still works down the rest of the line -- no
+ * guessing between a click and a drag on the same pixels, because they are no longer the same
+ * pixels. The strip's hover highlight is the thin 2px line only, never the whole hit area, so a
+ * grab target wide enough to catch easily does not look like a wide bar.
  */
 const SidebarToggleHandle = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
   ({ className, ...props }, ref) => {
@@ -370,8 +376,10 @@ const SidebarToggleHandle = React.forwardRef<HTMLDivElement, React.ComponentProp
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
 
+    // The hit area stays 16px wide so the line is easy to catch; only the 2px `after` line ever
+    // takes colour, so grabbing it never paints a wide bar down the edge.
     const dragStripClass =
-      "absolute inset-x-0 cursor-col-resize touch-none hover:bg-sidebar-border active:bg-sidebar-border after:absolute after:inset-y-0 after:left-1/2 after:w-[2px]";
+      "absolute inset-x-0 cursor-col-resize touch-none after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border active:after:bg-sidebar-border";
 
     return (
       <div
@@ -384,33 +392,24 @@ const SidebarToggleHandle = React.forwardRef<HTMLDivElement, React.ComponentProp
         {...props}
       >
         {!collapsed && (
-          <>
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Resize sidebar"
-              className={cn(dragStripClass, "top-0 bottom-[calc(50%+18px)]")}
-              onPointerDown={startDrag}
-              onPointerMove={drag}
-              onPointerUp={endDrag}
-            />
-            <div
-              role="separator"
-              aria-orientation="vertical"
-              aria-label="Resize sidebar"
-              className={cn(dragStripClass, "top-[calc(50%+18px)] bottom-0")}
-              onPointerDown={startDrag}
-              onPointerMove={drag}
-              onPointerUp={endDrag}
-            />
-          </>
+          <div
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Resize sidebar"
+            className={cn(dragStripClass, "top-[76px] bottom-0")}
+            onPointerDown={startDrag}
+            onPointerMove={drag}
+            onPointerUp={endDrag}
+          />
         )}
+        {/* top-14 is ShellHeader's own h-14, so the button's centre lands exactly on that header's
+            bottom border where it crosses the sidebar's vertical edge. */}
         <button
           type="button"
           onClick={toggleSidebar}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="absolute top-1/2 left-1/2 z-10 flex size-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm hover:bg-sidebar-accent"
+          className="absolute top-14 left-1/2 z-10 flex size-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm hover:bg-sidebar-accent"
         >
           {collapsed ? (
             <CircleArrowRight className="size-4" aria-hidden />

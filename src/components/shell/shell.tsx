@@ -27,6 +27,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "../../ui/dropdown-menu";
+import { useIsMobile } from "../../hooks/use-mobile";
 import { Separator } from "../../ui/separator";
 import {
   Sidebar,
@@ -287,10 +288,24 @@ export function ShellHeader({
   actions?: ReactNode;
 }) {
   const crumbs = useShellCrumbs({ nav, homeLabel, staticLeafLabels });
+  // useIsMobile rather than useSidebar: this header is exported for custom layouts to reuse on
+  // their own, and useSidebar throws outside a SidebarProvider. The trigger it gates still needs
+  // that provider, but only on mobile — which is exactly where it now renders.
+  const isMobile = useIsMobile();
   return (
     <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border/80 bg-[var(--shell-header,var(--background))]/85 px-4 backdrop-blur-sm">
-      <SidebarTrigger className="-ml-1 shrink-0" />
-      <Separator orientation="vertical" className="mr-1 h-4 shrink-0" />
+      {/* MOBILE ONLY. On desktop, SidebarToggleHandle owns collapse/expand and sits on this
+          header's own bottom border where the sidebar's edge crosses it — a second toggle a few
+          pixels from it was the pair of overlapping icons in that corner. But that handle renders
+          nothing on mobile (the sidebar is an offcanvas sheet there, with no edge to pin to and
+          nothing to resize), so dropping this outright would leave a phone with no way to OPEN the
+          nav at all — the sheet's own X only closes it. */}
+      {isMobile && (
+        <>
+          <SidebarTrigger className="-ml-1 shrink-0" />
+          <Separator orientation="vertical" className="mr-1 h-4 shrink-0" />
+        </>
+      )}
       <Breadcrumb aria-label={breadcrumbAriaLabel} className="min-w-0">
         <BreadcrumbList className="flex-nowrap sm:hidden">
           <BreadcrumbItem className="min-w-0">

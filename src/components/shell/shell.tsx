@@ -468,31 +468,36 @@ export function ShellSidebar({
   const { isMobile, setOpenMobile } = useSidebar();
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarHeader className="h-14 flex-row items-center justify-between px-3">
-        {logo}
-        {isMobile && (
-          <button
-            type="button"
-            onClick={() => setOpenMobile(false)}
-            aria-label={closeLabel}
-            className="-mr-1 shrink-0 cursor-pointer rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
-          >
-            <X className="size-5" />
-          </button>
-        )}
-      </SidebarHeader>
+    <>
+      <Sidebar collapsible="icon">
+        <SidebarHeader className="h-14 flex-row items-center justify-between px-3">
+          {logo}
+          {isMobile && (
+            <button
+              type="button"
+              onClick={() => setOpenMobile(false)}
+              aria-label={closeLabel}
+              className="-mr-1 shrink-0 cursor-pointer rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+            >
+              <X className="size-5" />
+            </button>
+          )}
+        </SidebarHeader>
 
-      <SidebarContent data-tour="shell-nav">
-        <SidebarGroup>
-          <ShellNavMenu nav={nav} badges={badges} />
-        </SidebarGroup>
-      </SidebarContent>
+        <SidebarContent data-tour="shell-nav">
+          <SidebarGroup>
+            <ShellNavMenu nav={nav} badges={badges} />
+          </SidebarGroup>
+        </SidebarContent>
 
-      {footer && <SidebarFooter className="gap-2">{footer}</SidebarFooter>}
+        {footer && <SidebarFooter className="gap-2">{footer}</SidebarFooter>}
+      </Sidebar>
 
+      {/* OUTSIDE <Sidebar>, not a stray. The sidebar frame is `fixed z-10`, a stacking context no
+          child can escape, so in there this button painted under ShellHeader's sticky z-30 and
+          came out as a clipped half-disc. As a sibling it stacks against the header normally. */}
       <SidebarToggleHandle />
-    </Sidebar>
+    </>
   );
 }
 

@@ -388,15 +388,23 @@ const SidebarToggleHandle = React.forwardRef<HTMLDivElement, React.ComponentProp
       <div
         ref={ref}
         data-sidebar="toggle-handle"
+        style={{
+          // Tracks the sidebar's own edge, and the same 200ms as the frame's width transition
+          // below keeps the two moving together instead of the button snapping ahead.
+          left: collapsed ? "var(--sidebar-width-icon)" : "var(--sidebar-width)",
+        }}
         className={cn(
-          // z-40 clears ShellHeader's sticky z-30. The button straddles that header's bottom
-          // border, so at a lower z-index its upper half sits under the header's translucent
-          // /85 backdrop-blur background and renders washed out and half-swallowed.
+          // FIXED TO THE VIEWPORT, AND RENDERED OUTSIDE <Sidebar> ON PURPOSE. The sidebar frame is
+          // `fixed inset-y-0 z-10`, which is a stacking context: any child of it, at any z-index,
+          // is painted below ShellHeader's sticky z-30, so this button's upper half rendered under
+          // the header's translucent backdrop and it came out looking like a clipped half-disc.
+          // No z-index on a child can escape that, so the handle is a sibling of the sidebar
+          // instead, positioned off the same --sidebar-width var the frame uses.
           //
-          // pointer-events-none is what makes that safe: this box is full-height, so above the
-          // header it would otherwise swallow every click in a 16px column down the page. Only
-          // the button and the drag strip take pointer events back.
-          "pointer-events-none absolute inset-y-0 z-40 hidden w-4 -translate-x-1/2 group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:block",
+          // pointer-events-none is what makes the full-height box safe: it spans the whole page,
+          // so it would otherwise swallow every click in a 16px column. Only the button and the
+          // drag strip take pointer events back.
+          "pointer-events-none fixed inset-y-0 z-40 hidden w-4 -translate-x-1/2 transition-[left] duration-200 ease-linear md:block",
           className,
         )}
         {...props}

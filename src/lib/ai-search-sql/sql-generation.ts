@@ -29,6 +29,7 @@ export interface SqlPreview {
   whereClause: string | null;
   rejectedWhereClause: string | null;
   unsupportedAspects: string[];
+  extraClauseDescription: string | null;
   sql: string | null;
 }
 
@@ -37,8 +38,9 @@ const WHERE_SCHEMA = {
   properties: {
     whereClause: { type: ["string", "null"] },
     unsupportedAspects: { type: "array", items: { type: "string" } },
+    extraClauseDescription: { type: ["string", "null"] },
   },
-  required: ["whereClause", "unsupportedAspects"],
+  required: ["whereClause", "unsupportedAspects", "extraClauseDescription"],
   additionalProperties: false,
 } as const;
 
@@ -212,7 +214,11 @@ Worked examples of the ambiguity rule — follow them exactly (T stands for any 
     RIGHT: whereClause contains column_a < 0.7; unsupportedAspects: []
     WRONG: unsupportedAspects: ["T below 70 percent (could mean column_a)"] — one candidate is a match, not an ambiguity
 
-Return only JSON in the shape { "whereClause": string | null, "unsupportedAspects": string[] }.`;
+extraClauseDescription is shown to the END USER, next to a sentence the app already builds for you out of the entities (company, supplier, payment/review/bank-match state, document type, workflow step, amount, category, property, unassigned company, traffic light, DATEV handover, direct debit, dates — the ones the entity mappings above cover). That sentence has no way to describe anything else, so: whenever your whereClause contains a comparison on a catalog column that NONE of the entity mappings above name, write ONE short phrase, in the SAME language as the question, describing ONLY that extra comparison — worded so it reads naturally appended after "invoices that belong to X" (for example "have an AI score above 80%", "arrived by email", "are missing a review"). Same voice as unsupportedAspects: warm and plain, no column identifiers, no SQL, no jargon. When your whereClause is fully covered by the entity-mapped columns (even a complex one), or is null, return extraClauseDescription: null — do not describe something the sentence already says.
+
+A column appearing in WORDING MATCHES above is NOT the same as being covered by an entity mapping — WORDING MATCHES only tells you which column to filter on, it says nothing about whether the app's sentence can describe it. Judge extraClauseDescription ONLY against the entity mapping list. Concrete example: the question asks for a company AND "ai score above 80" / "confidence over 90%", and the catalog's recognition-confidence column is matched via WORDING MATCHES but named in NO entity mapping — your whereClause correctly includes both comparisons, and extraClauseDescription is NOT null: it says something like "have an AI score above 80%". Returning null there is WRONG even though the comparison itself was correctly expressed.
+
+Return only JSON in the shape { "whereClause": string | null, "unsupportedAspects": string[], "extraClauseDescription": string | null }.`;
 }
 
 function dateClauseFragment(
@@ -254,7 +260,12 @@ export async function generateWhereClause(
   config: SqlGenerationConfig,
   classification: IntentClassification,
   query: string,
-): Promise<{ whereClause: string | null; rejectedWhereClause: string | null; unsupportedAspects: string[] }> {
+): Promise<{
+  whereClause: string | null;
+  rejectedWhereClause: string | null;
+  unsupportedAspects: string[];
+  extraClauseDescription: string | null;
+}> {
   const model = config.sqlModel ?? config.intentModel;
   let lastError: string | undefined;
   let rejected: string | null = null;
@@ -270,12 +281,20 @@ export async function generateWhereClause(
     if (completion.usage) {
       config.onModelUsage?.(completion.usage, { stage: "sql_generate", attempt: attempt + 1 });
     }
-    const raw = completion.data as { whereClause?: unknown; unsupportedAspects?: unknown };
+    const raw = completion.data as {
+      whereClause?: unknown;
+      unsupportedAspects?: unknown;
+      extraClauseDescription?: unknown;
+    };
     const unsupportedAspects = Array.isArray(raw.unsupportedAspects)
       ? raw.unsupportedAspects.filter(
           (aspect): aspect is string => typeof aspect === "string" && aspect.trim() !== "",
         )
       : [];
+    const extraClauseDescription =
+      typeof raw.extraClauseDescription === "string" && raw.extraClauseDescription.trim() !== ""
+        ? raw.extraClauseDescription.trim()
+        : null;
     const finalAspects = withDeterministicAmbiguities(
       unsupportedAspects,
       wordingMatches,
@@ -291,7 +310,23 @@ export async function generateWhereClause(
     const forbiddenDateColumns = [config.dateColumns.document, config.dateColumns.due].filter(
       (column) => candidate && new RegExp(`\\b${column}\\b`, "i").test(candidate),
     );
-    if ((missingFacts.length > 0 || forbiddenDateColumns.length > 0) && attempt < 3) {
+    const entityMappedColumns = new Set(
+      config.columns
+        .map((column) => column.name)
+        .filter((name) => config.entityMappings.some((mapping) => new RegExp(`\\b${name}\\b`).test(mapping.rule))),
+    );
+    const uncoveredMatchedColumns = wordingMatches.selected.filter((entry) => {
+      if (entry.column === config.dateColumns.document || entry.column === config.dateColumns.due) {
+        return false;
+      }
+      if (entityMappedColumns.has(entry.column)) return false;
+      return candidate !== null && new RegExp(`\\b${entry.column}\\b`, "i").test(candidate);
+    });
+    const missingExtraDescription = uncoveredMatchedColumns.length > 0 && !extraClauseDescription;
+    if (
+      (missingFacts.length > 0 || forbiddenDateColumns.length > 0 || missingExtraDescription) &&
+      attempt < 3
+    ) {
       const messages: string[] = [];
       if (missingFacts.length > 0) {
         messages.push(
@@ -307,6 +342,11 @@ export async function generateWhereClause(
           `Your whereClause mentions ${forbiddenDateColumns.join(" and/or ")} directly. Date and month entities are applied automatically outside your clause — remove every comparison on ${forbiddenDateColumns.join(" and ")} from your whereClause entirely, even if it looks like it matches the entities.`,
         );
       }
+      if (missingExtraDescription) {
+        messages.push(
+          `Your whereClause uses ${uncoveredMatchedColumns.map((entry) => entry.column).join(" and ")}, which no entity mapping covers, but you returned extraClauseDescription: null. The app's sentence cannot describe this comparison on its own — you MUST fill extraClauseDescription with a short plain-language phrase describing it (in the question's language), so it is not silently dropped from what the user is told.`,
+        );
+      }
       lastError = messages.join(" ");
       continue;
     }
@@ -316,12 +356,22 @@ export async function generateWhereClause(
     );
     const parts = [...(candidate ? [candidate] : []), ...deterministicClauses];
     if (parts.length === 0) {
-      return { whereClause: null, rejectedWhereClause: null, unsupportedAspects: finalAspects };
+      return {
+        whereClause: null,
+        rejectedWhereClause: null,
+        unsupportedAspects: finalAspects,
+        extraClauseDescription: null,
+      };
     }
     const combined = parts.length === 1 ? parts[0] : parts.map((part) => `(${part})`).join(" and ");
     try {
       const normalized = validateWhereClause(combined, config.columns, config.maxConditions);
-      return { whereClause: normalized, rejectedWhereClause: null, unsupportedAspects: finalAspects };
+      return {
+        whereClause: normalized,
+        rejectedWhereClause: null,
+        unsupportedAspects: finalAspects,
+        extraClauseDescription,
+      };
     } catch (error) {
       if (!(error instanceof WhereClauseError)) throw error;
       lastError = error.message;
@@ -332,6 +382,7 @@ export async function generateWhereClause(
     whereClause: null,
     rejectedWhereClause: rejected,
     unsupportedAspects: ["the filter condition could not be safely validated"],
+    extraClauseDescription: null,
   };
 }
 
@@ -386,6 +437,7 @@ export async function generateSqlPreview(
       whereClause: null,
       rejectedWhereClause: null,
       unsupportedAspects: [],
+      extraClauseDescription: null,
       sql: null,
     };
   }
@@ -395,6 +447,7 @@ export async function generateSqlPreview(
     whereClause: generated.whereClause,
     rejectedWhereClause: generated.rejectedWhereClause,
     unsupportedAspects: generated.unsupportedAspects,
+    extraClauseDescription: generated.extraClauseDescription,
     sql: composeQuery(classification, generated.whereClause, config),
   };
 }

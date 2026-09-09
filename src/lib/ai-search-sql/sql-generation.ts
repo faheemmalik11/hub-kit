@@ -1,8 +1,10 @@
 import type { ModelJsonClient } from "./types";
 import type {
+  DateColumnSpec,
   EntityMappingSpec,
   IntentClassification,
   IntentClassifierConfig,
+  IntentEntities,
   QueryColumnSpec,
   QueryScopeSpec,
 } from "./types";
@@ -12,6 +14,7 @@ export interface SqlGenerationConfig extends IntentClassifierConfig {
   columns: QueryColumnSpec[];
   entityMappings: EntityMappingSpec[];
   scope: QueryScopeSpec;
+  dateColumns: DateColumnSpec;
   listColumns: string;
   listOrderBy: string;
   groupKeyExpressions: Record<string, string>;
@@ -177,7 +180,9 @@ Allowed syntax, nothing else:
 
 You receive the user's question plus its classified intent and entities. The entities are ALREADY validated — company codes are real, dates are resolved. Build the expression from them.
 
-HOW EACH ENTITY MAPS TO COLUMNS (this app's own configuration — follow it exactly):
+DATE AND MONTH ENTITIES ARE NOT YOURS: entities.dateFrom, entities.dateTo, entities.dateMonth, entities.dueDateFrom, entities.dueDateTo and entities.dueDateMonth are ALREADY fully applied automatically by the system outside your clause — that part of the question is FULLY handled, not partially. NEVER express them yourself, never mention the invoice-date or due-date columns for them, and never re-derive a date or month from the question's own wording — even the exact word the question used (a month name, "last month", a date). Just as importantly: NEVER add the wording that named one of these entities to unsupportedAspects either — it is not unsupported, it is handled, and listing it there would falsely tell the user their date/due-date constraint was dropped when it was not. Silently say nothing about it in either place. If the question also carries some OTHER constraint that happens to use date-like wording, express only that other constraint, on its own listed column, exactly as its mapping below says.
+
+HOW EACH REMAINING ENTITY MAPS TO COLUMNS (this app's own configuration — follow it exactly):
 ${config.entityMappings.map((mapping) => `- ${mapping.entity}: ${mapping.rule}`).join("\n")}
 
 General rules:
@@ -187,11 +192,14 @@ General rules:
 - AMBIGUOUS NUMERIC terms are different: a threshold has ONE subject, and OR-ing two different measures answers a looser question than the one asked. When the measure a number applies to could be more than one listed column, do NOT express it — put it into unsupportedAspects, in the user's language, asking which measure was meant.
 - Every comparison needs a column its wording actually selects. A number whose accompanying word matches NO listed column at all goes into unsupportedAspects — never onto whichever column usually holds numbers.
 - SCALES AND UNITS: every comparison value must use the column's own scale as stated in its description — convert the question's units when they differ (a percentage against a 0-to-1 column becomes a fraction). Never compare raw question numbers against a column whose description states a different scale.
+- MANY CONSTRAINTS IN ONE QUESTION IS NORMAL: a question naming several separate numeric or text conditions together is not itself a reason for ambiguity — judge EACH constraint independently, by its OWN wording against the catalog, exactly as if it were the only constraint in the question. Do not let the presence of other constraints make you more cautious about one that is otherwise a clear, single-column match (especially one already given to you as a MUST-express fact above).
 - entities.archived is handled outside your clause. The system itself adds this base scope — never restate any part of it: ${config.scope.active.join(" and ")}.
 
-unsupportedAspects entries are shown to the END USER: write each one in the SAME language as the question, in plain words a non-technical reader understands. NEVER include internal column identifiers — describe a candidate column by the meaning its description states (for example the plain words for a recognition confidence or a review priority), and when a term was ambiguous, ask in that entry which meaning was intended.
+unsupportedAspects entries are shown to the END USER: write each one in the SAME language as the question, as a short, warm, everyday sentence — the way a helpful colleague would say it out loud, never like an error message or a technical report. NEVER include internal column identifiers, catalog language, or words like "attributes", "context", "defined" or "not clearly" — describe a candidate column by the meaning its description states (for example the plain words for a recognition confidence or a review priority), and when a term was ambiguous, ask in that entry which meaning was intended.
+  RIGHT: "We couldn't tell what you meant by 'query' here."
+  WRONG: "The topic 'query' is not clearly defined in terms of invoice attributes." — this is jargon, not something you'd say to a colleague.
 
-whereClause is null when there is nothing to filter (no entities and no expressible topic). unsupportedAspects lists ONLY the stated constraints that are NOT in your whereClause — a constraint you expressed must NEVER also appear there, and one you could not express must ALWAYS appear there. When you are unsure whether to express a constraint or mark it unsupported, mark it unsupported and leave it out of the clause. Losing a constraint silently is the worst possible outcome; guessing is the second worst.
+whereClause is null when there is NOTHING FOR YOU to filter — this includes a question that is entirely date/due-date/month wording, since that part is already fully handled elsewhere: return whereClause: null and unsupportedAspects: [] in that case, never the question's own text. whereClause is otherwise null when there is nothing to filter (no entities and no expressible topic). unsupportedAspects lists ONLY the stated constraints that are NOT in your whereClause — a constraint you expressed must NEVER also appear there, and one you could not express must ALWAYS appear there. When you are unsure whether to express a constraint or mark it unsupported, mark it unsupported and leave it out of the clause. Losing a constraint silently is the worst possible outcome; guessing is the second worst.
 
 If exactly ONE listed column matches the wording (by its name, description or user terms), express it on that column and do not mention it in unsupportedAspects.
 
@@ -207,6 +215,41 @@ Worked examples of the ambiguity rule — follow them exactly (T stands for any 
 Return only JSON in the shape { "whereClause": string | null, "unsupportedAspects": string[] }.`;
 }
 
+function dateClauseFragment(
+  column: string,
+  from: string | null,
+  to: string | null,
+  month: number | null,
+): string | null {
+  if (month !== null) return `extract(month from ${column}) = ${month}`;
+  if (from && to) return `${column} between '${from}' and '${to}'`;
+  if (from) return `${column} >= '${from}'`;
+  if (to) return `${column} <= '${to}'`;
+  return null;
+}
+
+function buildDeterministicDateClauses(
+  entities: IntentEntities,
+  dateColumns: DateColumnSpec,
+): string[] {
+  const clauses: string[] = [];
+  const document = dateClauseFragment(
+    dateColumns.document,
+    entities.dateFrom,
+    entities.dateTo,
+    entities.dateMonth,
+  );
+  if (document) clauses.push(document);
+  const due = dateClauseFragment(
+    dateColumns.due,
+    entities.dueDateFrom,
+    entities.dueDateTo,
+    entities.dueDateMonth,
+  );
+  if (due) clauses.push(due);
+  return clauses;
+}
+
 export async function generateWhereClause(
   config: SqlGenerationConfig,
   classification: IntentClassification,
@@ -215,15 +258,19 @@ export async function generateWhereClause(
   const model = config.sqlModel ?? config.intentModel;
   let lastError: string | undefined;
   let rejected: string | null = null;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
     const wordingMatches = matchColumnWording(query, config.columns);
-    const raw = (await model.completeJson({
+    const completion = await model.completeJson({
       instructions: buildWhereGenerationInstructions(config, lastError, wordingMatches),
       input: JSON.stringify({ question: query, classification }, null, 2),
       schemaName: "invoice_where_clause",
       schema: WHERE_SCHEMA,
       temperature: 0,
-    })) as { whereClause?: unknown; unsupportedAspects?: unknown };
+    });
+    if (completion.usage) {
+      config.onModelUsage?.(completion.usage, { stage: "sql_generate", attempt: attempt + 1 });
+    }
+    const raw = completion.data as { whereClause?: unknown; unsupportedAspects?: unknown };
     const unsupportedAspects = Array.isArray(raw.unsupportedAspects)
       ? raw.unsupportedAspects.filter(
           (aspect): aspect is string => typeof aspect === "string" && aspect.trim() !== "",
@@ -235,16 +282,50 @@ export async function generateWhereClause(
       config.columns,
     );
     const candidate = typeof raw.whereClause === "string" ? raw.whereClause.trim() : null;
-    if (!candidate) {
+    const missingFacts = wordingMatches.selected.filter((entry) => {
+      if (entry.column === config.dateColumns.document || entry.column === config.dateColumns.due) {
+        return false;
+      }
+      return !candidate || !new RegExp(`\\b${entry.column}\\b`, "i").test(candidate);
+    });
+    const forbiddenDateColumns = [config.dateColumns.document, config.dateColumns.due].filter(
+      (column) => candidate && new RegExp(`\\b${column}\\b`, "i").test(candidate),
+    );
+    if ((missingFacts.length > 0 || forbiddenDateColumns.length > 0) && attempt < 3) {
+      const messages: string[] = [];
+      if (missingFacts.length > 0) {
+        messages.push(
+          `You marked ${missingFacts.map((fact) => `"${fact.wording}"`).join(", ")} unsupported, but this app's own configuration says ${
+            missingFacts.length === 1 ? "it names a column that MUST" : "each names a column that MUST"
+          } be expressed, never marked unsupported: ${missingFacts
+            .map((fact) => `wording "${fact.wording}" names column ${fact.column}`)
+            .join("; ")}.`,
+        );
+      }
+      if (forbiddenDateColumns.length > 0) {
+        messages.push(
+          `Your whereClause mentions ${forbiddenDateColumns.join(" and/or ")} directly. Date and month entities are applied automatically outside your clause — remove every comparison on ${forbiddenDateColumns.join(" and ")} from your whereClause entirely, even if it looks like it matches the entities.`,
+        );
+      }
+      lastError = messages.join(" ");
+      continue;
+    }
+    const deterministicClauses = buildDeterministicDateClauses(
+      classification.entities,
+      config.dateColumns,
+    );
+    const parts = [...(candidate ? [candidate] : []), ...deterministicClauses];
+    if (parts.length === 0) {
       return { whereClause: null, rejectedWhereClause: null, unsupportedAspects: finalAspects };
     }
+    const combined = parts.length === 1 ? parts[0] : parts.map((part) => `(${part})`).join(" and ");
     try {
-      const normalized = validateWhereClause(candidate, config.columns, config.maxConditions);
+      const normalized = validateWhereClause(combined, config.columns, config.maxConditions);
       return { whereClause: normalized, rejectedWhereClause: null, unsupportedAspects: finalAspects };
     } catch (error) {
       if (!(error instanceof WhereClauseError)) throw error;
       lastError = error.message;
-      rejected = candidate;
+      rejected = combined;
     }
   }
   return {

@@ -1,4 +1,4 @@
-import type { EmbeddingClient, ModelJsonClient, ModelJsonRequest } from "./types";
+import type { EmbeddingClient, ModelJsonClient, ModelJsonRequest, ModelUsage } from "./types";
 
 export class AiSearchModelError extends Error {
   details?: unknown;
@@ -27,6 +27,7 @@ interface OpenAiResponsePayload {
   output?: Array<{ type?: string; content?: Array<{ type?: string; text?: string }> }>;
   output_text?: string;
   error?: { message?: string };
+  usage?: { input_tokens?: number; output_tokens?: number };
 }
 
 export function extractResponseText(payload: OpenAiResponsePayload): string {
@@ -46,13 +47,15 @@ export interface OpenAiClientOptions {
   model: string;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
+  provider?: string;
 }
 
 export function openAiModelClient(options: OpenAiClientOptions): ModelJsonClient {
   const doFetch = options.fetchImpl ?? fetch;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const provider = options.provider ?? "openai";
   return {
-    async completeJson(request: ModelJsonRequest): Promise<unknown> {
+    async completeJson(request: ModelJsonRequest): Promise<{ data: unknown; usage: ModelUsage | null }> {
       let response: Response;
       try {
         response = await doFetch(OPENAI_RESPONSES_URL, {
@@ -91,8 +94,16 @@ export function openAiModelClient(options: OpenAiClientOptions): ModelJsonClient
 
       const payload = (await response.json()) as OpenAiResponsePayload;
       const text = extractResponseText(payload);
+      const usage: ModelUsage | null = payload.usage
+        ? {
+            provider,
+            model: options.model,
+            inputTokens: payload.usage.input_tokens ?? 0,
+            outputTokens: payload.usage.output_tokens ?? 0,
+          }
+        : null;
       try {
-        return JSON.parse(text);
+        return { data: JSON.parse(text), usage };
       } catch (e) {
         throw new AiSearchModelError(`Model response was not valid JSON: ${errorMessage(e)}`, {
           text: text.slice(0, 500),

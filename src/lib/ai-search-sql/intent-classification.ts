@@ -133,6 +133,11 @@ export const defaultEntityExamples: IntentExampleSpec[] = [
     entities: { workflowStep: "approval stage" },
   },
   {
+    question: "invoice with query",
+    intent: "search_invoices",
+    entities: { workflowStep: "query" },
+  },
+  {
     question: "rejected invoices",
     intent: "search_invoices",
     entities: { workflowStep: "rejected" },
@@ -141,6 +146,11 @@ export const defaultEntityExamples: IntentExampleSpec[] = [
     question: "abgeschlossene Rechnungen",
     intent: "search_invoices",
     entities: { workflowStep: "abgeschlossene" },
+  },
+  {
+    question: "invoices needing review and due in September",
+    intent: "search_invoices",
+    entities: { reviewState: "needed", dueDateMonth: 9, dateMonth: null },
   },
   {
     question: "invoices with a red traffic light",
@@ -293,9 +303,9 @@ export function buildIntentClassificationInstructions(
   const today = now.toISOString().slice(0, 10);
   const unassignedCode = config.unassignedCompanyCode ?? null;
   const workflowStepCatalog = config.workflowSteps?.length
-    ? ` This app's workflow steps are: ${config.workflowSteps
-        .map((step) => `${step.value} = ${step.meaning}`)
-        .join("; ")}. Wording whose MEANING names one of these steps, in any language, IS a workflow-step reference — still copy the question's own wording, never the step value. Wording about being paid, open or overdue stays in paymentState, never here.`
+    ? ` This app's workflow steps, one per line:\n${config.workflowSteps
+        .map((step) => `  - ${step.value}: ${step.meaning}`)
+        .join("\n")}\nWording whose MEANING names one of these steps, in any language, IS a workflow-step reference — still copy the question's own wording, never the step value. Wording about being paid, open or overdue stays in paymentState, never here.`
     : "";
   const companyList =
     vocabulary.companies
@@ -354,7 +364,7 @@ Entity rules:
 - NEVER drop a named entity. A question naming several companies or vendors ("invoices from ${config.promptExamples.supplierName} and Telekom") lists EVERY one of them — answering for a subset of the named entities answers a different question than the one asked.
 - A name that matches a company CODE or company name from the list above (any casing) is ALWAYS also a company reference, whatever wording surrounds it — "invoices from ${config.promptExamples.companyCode}" sets company='${config.promptExamples.companyCode}'. Vendor wording never outweighs an exact match against our own companies.
 - category: one of the listed cost categories when the question names that kind of expense, matched on meaning (electricity → the energy category). null when unsure — never guess the nearest-sounding one.
-- dateFrom/dateTo: resolve periods to full 'YYYY-MM-DD' ranges. Today is ${today}. "this year" is the whole calendar year, "last month" the whole previous month; an open-ended "since January" sets only dateFrom. A month named WITHOUT any year ("in August", "im August") is NOT resolved to a year: set dateMonth (or dueDateMonth for due/fällig wording) to the month number 1-12 and leave the date range fields null — inventing a year silently excludes other years.
+- dateFrom/dateTo: resolve periods to full 'YYYY-MM-DD' ranges. Today is ${today}. "this year" is the whole calendar year, "last month" the whole previous month; an open-ended "since January" sets only dateFrom. A month named WITHOUT any year ("in August", "im August") is NOT resolved to a year: set dateMonth (or dueDateMonth for due/fällig wording) to the month number 1-12 and leave the date range fields null — inventing a year silently excludes other years. A single month reference names EITHER the document date OR the due date, never both: due/fällig wording ("due in August", "fällig im August") fills dueDateMonth ONLY and leaves dateMonth null; wording without due/fällig fills dateMonth ONLY and leaves dueDateMonth null. Setting both for one reference is wrong even when the words could plausibly describe either date.
 - amountMin/amountMax: per-invoice gross thresholds as plain numbers. German notation uses dot for thousands and comma for decimals ("1.500,50" is 1500.5); English is the reverse.
 - paymentState: 'paid' ONLY for pay verbs (bezahlt/gezahlt/beglichen/paid/settled), in EVERY phrasing including "did we pay"/"have we paid"; 'open' for unpaid/offen/outstanding; 'overdue' for überfällig/past due. Spending words (ausgegeben/spend/Kosten) are about invoiced volume and give null. The same question in German and English must classify identically.
 - reviewState: 'needed' when the question asks for invoices that need review/checking or have failed validation checks ("needs review", "zu prüfen", "with problems", "failed checks"); 'clear' when it asks for invoices whose checks all passed; null when review is not mentioned.
@@ -476,6 +486,50 @@ function asMonth(value: unknown): number | null {
     : null;
 }
 
+const MONTH_NAME_PREFIXES: string[][] = [
+  ["jan"],
+  ["feb"],
+  ["mar", "mae", "mär", "mrz"],
+  ["apr"],
+  ["may", "mai"],
+  ["jun"],
+  ["jul"],
+  ["aug"],
+  ["sep"],
+  ["oct", "okt"],
+  ["nov"],
+  ["dec", "dez"],
+];
+
+function fullMonthRange(from: string | null, to: string | null): number | null {
+  if (!from || !to) return null;
+  const start = new Date(`${from}T00:00:00Z`);
+  const end = new Date(`${to}T00:00:00Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return null;
+  if (start.getUTCDate() !== 1) return null;
+  if (start.getUTCFullYear() !== end.getUTCFullYear() || start.getUTCMonth() !== end.getUTCMonth()) {
+    return null;
+  }
+  const lastDay = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth() + 1, 0)).getUTCDate();
+  if (end.getUTCDate() !== lastDay) return null;
+  return start.getUTCMonth() + 1;
+}
+
+function monthNamedWithoutYear(
+  question: string,
+  from: string | null,
+  to: string | null,
+): number | null {
+  const month = fullMonthRange(from, to);
+  if (!month) return null;
+  const lowered = question.toLowerCase();
+  if (/\d{4}/.test(lowered)) return null;
+  if (/year|jahr/.test(lowered)) return null;
+  const tokens = lowered.split(/[^\p{L}]+/u).filter(Boolean);
+  const prefixes = MONTH_NAME_PREFIXES[month - 1];
+  return tokens.some((token) => prefixes.some((prefix) => token.startsWith(prefix))) ? month : null;
+}
+
 function asAmount(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -493,13 +547,15 @@ export async function classifyIntent(
 ): Promise<IntentClassification> {
   const intents = config.intents ?? defaultInvoiceIntents;
   const model = config.classifierModel ?? config.intentModel;
-  const raw = (await model.completeJson({
+  const completion = await model.completeJson({
     instructions: buildIntentClassificationInstructions(config, vocabulary),
     input: query,
     schemaName: "invoice_intent_classification",
     schema: buildIntentClassificationSchema(intents),
     temperature: 0,
-  })) as {
+  });
+  if (completion.usage) config.onModelUsage?.(completion.usage, { stage: "classify", attempt: 1 });
+  const raw = completion.data as {
     intent?: unknown;
     confidence?: unknown;
     entities?: Partial<Record<keyof IntentEntities, unknown>>;
@@ -541,13 +597,48 @@ export async function classifyIntent(
       return containingCompanyCodes(value, selectableCompanies);
     },
   );
+  let documentMonth =
+    asMonth(rawEntities.dateMonth) ??
+    monthNamedWithoutYear(query, asDate(rawEntities.dateFrom), asDate(rawEntities.dateTo));
+  let dueMonth =
+    asMonth(rawEntities.dueDateMonth) ??
+    monthNamedWithoutYear(query, asDate(rawEntities.dueDateFrom), asDate(rawEntities.dueDateTo));
+  let documentDateFrom = documentMonth ? null : asDate(rawEntities.dateFrom);
+  let documentDateTo = documentMonth ? null : asDate(rawEntities.dateTo);
+  let dueDateFrom = dueMonth ? null : asDate(rawEntities.dueDateFrom);
+  let dueDateTo = dueMonth ? null : asDate(rawEntities.dueDateTo);
+  // The model sometimes echoes the SAME calendar month onto both the document-date and due-date
+  // fields, even though the question named only one of them — sometimes as the identical value,
+  // sometimes as a different SHAPE for the same month (a precise range on one axis, a bare month
+  // on the other). Comparing by month NUMBER (not raw string equality) catches both shapes. Two
+  // axes naming DIFFERENT months are always a genuine dual-date question and are left alone.
+  const documentMonthNumber = documentMonth ?? fullMonthRange(documentDateFrom, documentDateTo);
+  const dueMonthNumber = dueMonth ?? fullMonthRange(dueDateFrom, dueDateTo);
+  if (documentMonthNumber !== null && documentMonthNumber === dueMonthNumber) {
+    const documentRange =
+      documentDateFrom && documentDateTo ? { from: documentDateFrom, to: documentDateTo } : null;
+    const dueRange = dueDateFrom && dueDateTo ? { from: dueDateFrom, to: dueDateTo } : null;
+    const preciseRange = dueRange ?? documentRange;
+    if (preciseRange) {
+      dueDateFrom = preciseRange.from;
+      dueDateTo = preciseRange.to;
+      dueMonth = null;
+    } else {
+      dueMonth = dueMonthNumber;
+      dueDateFrom = null;
+      dueDateTo = null;
+    }
+    documentMonth = null;
+    documentDateFrom = null;
+    documentDateTo = null;
+  }
   const entities: IntentEntities = {
     companies: [...new Set(refinedCompanies)],
     suppliers,
     property: resolveCode(asText(rawEntities.property), vocabulary.properties),
     category: resolveCategory(asText(rawEntities.category), vocabulary),
-    dateFrom: asMonth(rawEntities.dateMonth) ? null : asDate(rawEntities.dateFrom),
-    dateTo: asMonth(rawEntities.dateMonth) ? null : asDate(rawEntities.dateTo),
+    dateFrom: documentDateFrom,
+    dateTo: documentDateTo,
     amountMin: asAmount(rawEntities.amountMin),
     amountMax: asAmount(rawEntities.amountMax),
     paymentState: asChoice(rawEntities.paymentState, ["open", "paid", "overdue"] as const),
@@ -562,10 +653,10 @@ export async function classifyIntent(
       "flagged",
     ] as const),
     archived: rawEntities.archived === true,
-    dueDateFrom: asMonth(rawEntities.dueDateMonth) ? null : asDate(rawEntities.dueDateFrom),
-    dueDateTo: asMonth(rawEntities.dueDateMonth) ? null : asDate(rawEntities.dueDateTo),
-    dateMonth: asMonth(rawEntities.dateMonth),
-    dueDateMonth: asMonth(rawEntities.dueDateMonth),
+    dueDateFrom,
+    dueDateTo,
+    dateMonth: documentMonth,
+    dueDateMonth: dueMonth,
     directDebit: typeof rawEntities.directDebit === "boolean" ? rawEntities.directDebit : null,
     bankMatch: asChoice(rawEntities.bankMatch, [
       "any",

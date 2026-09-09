@@ -18,8 +18,25 @@ export interface ModelJsonRequest {
   temperature?: number;
 }
 
+export interface ModelUsage {
+  provider: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+}
+
+export interface ModelJsonResult {
+  data: unknown;
+  usage: ModelUsage | null;
+}
+
 export interface ModelJsonClient {
-  completeJson(request: ModelJsonRequest): Promise<unknown>;
+  completeJson(request: ModelJsonRequest): Promise<ModelJsonResult>;
+}
+
+export interface ModelUsageContext {
+  stage: "classify" | "sql_generate";
+  attempt: number;
 }
 
 export interface EmbeddingClient {
@@ -194,6 +211,7 @@ export interface IntentClassifierConfig {
   workflowSteps?: WorkflowStepSpec[];
   unassignedCompanyCode?: string | null;
   now?: () => Date;
+  onModelUsage?: (usage: ModelUsage, context: ModelUsageContext) => void;
 }
 
 export interface EntityMappingSpec {
@@ -204,6 +222,11 @@ export interface EntityMappingSpec {
 export interface QueryScopeSpec {
   active: string[];
   archived: string[];
+}
+
+export interface DateColumnSpec {
+  document: string;
+  due: string;
 }
 
 export interface AiSqlSearchConfig extends IntentClassifierConfig {

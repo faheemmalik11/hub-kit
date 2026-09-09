@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { CircleArrowLeft, CircleArrowRight, PanelLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, PanelLeft } from "lucide-react";
 
 import { useIsMobile } from "../hooks/use-mobile";
 import { cn } from "../lib/class-names";
@@ -340,9 +340,12 @@ SidebarRail.displayName = "SidebarRail";
  * with a separate resize handle placed right next to it on the same edge -- the two hit-zones
  * overlapped, so a click meant to toggle sometimes got captured by the resize handle's pointer
  * capture instead, and vice versa ("expansion not working fine"). One component now owns the
- * whole strip, and there is exactly one visible toggle affordance, never two: CircleArrowRight
- * (arrow pointing OUT of the sidebar) to expand while collapsed, CircleArrowLeft (arrow pointing
- * IN) to collapse while expanded. Sits exactly on the header's bottom border -- the same point
+ * whole strip, and there is exactly one visible toggle affordance, never two: a filled brand-
+ * coloured disc holding a chevron that points the way it moves the sidebar — right to expand
+ * while collapsed, left to collapse while expanded. The fill is `bg-sidebar-primary`, which every
+ * Hub already redefines through its own `--brand-*` tokens, so the button picks up each repo's
+ * theme with no per-repo override. The `ring-2 ring-sidebar` is what keeps it legible as a disc
+ * where it overlaps the border it sits on. Sits exactly on the header's bottom border -- the same point
  * where the sidebar's own vertical edge crosses that horizontal line -- so it reads as one badge
  * pinned to the corner, not a control floating inside either the header row or the nav list below
  * it. ShellHeader no longer renders its own SidebarTrigger for the same reason: two toggle
@@ -379,14 +382,21 @@ const SidebarToggleHandle = React.forwardRef<HTMLDivElement, React.ComponentProp
     // The hit area stays 16px wide so the line is easy to catch; only the 2px `after` line ever
     // takes colour, so grabbing it never paints a wide bar down the edge.
     const dragStripClass =
-      "absolute inset-x-0 cursor-col-resize touch-none after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border active:after:bg-sidebar-border";
+      "pointer-events-auto absolute inset-x-0 cursor-col-resize touch-none after:absolute after:inset-y-0 after:left-1/2 after:w-[2px] hover:after:bg-sidebar-border active:after:bg-sidebar-border";
 
     return (
       <div
         ref={ref}
         data-sidebar="toggle-handle"
         className={cn(
-          "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:block",
+          // z-40 clears ShellHeader's sticky z-30. The button straddles that header's bottom
+          // border, so at a lower z-index its upper half sits under the header's translucent
+          // /85 backdrop-blur background and renders washed out and half-swallowed.
+          //
+          // pointer-events-none is what makes that safe: this box is full-height, so above the
+          // header it would otherwise swallow every click in a 16px column down the page. Only
+          // the button and the drag strip take pointer events back.
+          "pointer-events-none absolute inset-y-0 z-40 hidden w-4 -translate-x-1/2 group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:block",
           className,
         )}
         {...props}
@@ -409,12 +419,12 @@ const SidebarToggleHandle = React.forwardRef<HTMLDivElement, React.ComponentProp
           onClick={toggleSidebar}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className="absolute top-14 left-1/2 z-10 flex size-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm hover:bg-sidebar-accent"
+          className="pointer-events-auto absolute top-14 left-1/2 z-10 flex size-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-sidebar-primary text-sidebar-primary-foreground shadow-md ring-2 ring-sidebar transition-colors hover:brightness-110"
         >
           {collapsed ? (
-            <CircleArrowRight className="size-4" aria-hidden />
+            <ChevronRight className="size-4" strokeWidth={2.5} aria-hidden />
           ) : (
-            <CircleArrowLeft className="size-4" aria-hidden />
+            <ChevronLeft className="size-4" strokeWidth={2.5} aria-hidden />
           )}
         </button>
       </div>

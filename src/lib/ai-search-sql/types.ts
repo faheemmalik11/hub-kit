@@ -101,7 +101,9 @@ export interface QueryColumnSpec {
   name: string;
   type: QueryColumnType;
   description: string;
+  label?: string;
   values?: string[];
+  terms?: string[];
 }
 
 export interface IntentSpec {
@@ -130,6 +132,8 @@ export interface IntentEntities {
   archived: boolean;
   dueDateFrom: string | null;
   dueDateTo: string | null;
+  dateMonth: number | null;
+  dueDateMonth: number | null;
   directDebit: boolean | null;
   totalField: "gross" | "net" | "vat" | null;
   groupBy: GroupByDimension | null;
@@ -176,14 +180,30 @@ export interface SqlSearchExecutor {
   ): Promise<GroupedTotalRow[]>;
 }
 
+export interface WorkflowStepSpec {
+  value: string;
+  meaning: string;
+}
+
 export interface IntentClassifierConfig {
   intentModel: ModelJsonClient;
   classifierModel?: ModelJsonClient;
   promptExamples: { companyCode: string; supplierName: string };
   intents?: IntentSpec[];
   entityExamples?: IntentExampleSpec[];
+  workflowSteps?: WorkflowStepSpec[];
   unassignedCompanyCode?: string | null;
   now?: () => Date;
+}
+
+export interface EntityMappingSpec {
+  entity: string;
+  rule: string;
+}
+
+export interface QueryScopeSpec {
+  active: string[];
+  archived: string[];
 }
 
 export interface AiSqlSearchConfig extends IntentClassifierConfig {

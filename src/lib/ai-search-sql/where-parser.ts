@@ -26,6 +26,10 @@ const KEYWORDS = new Set([
   "like",
   "true",
   "false",
+  "extract",
+  "from",
+  "month",
+  "year",
 ]);
 
 const COMPARISON_OPERATORS = new Set(["=", "<>", "!=", ">", ">=", "<", "<="]);
@@ -205,7 +209,38 @@ class Parser {
     return quoteString(token.value);
   }
 
+  private parseExtract(): string {
+    this.next();
+    const opening = this.next();
+    if (opening.kind !== "lparen") throw new WhereClauseError('Expected "(" after extract.');
+    const part = this.next();
+    if (part.kind !== "keyword" || (part.value !== "month" && part.value !== "year")) {
+      throw new WhereClauseError("extract() supports only month or year.");
+    }
+    this.expectKeyword("from");
+    const spec = this.column();
+    if (spec.type !== "date") {
+      throw new WhereClauseError(`extract() is only allowed on date columns, not "${spec.name}".`);
+    }
+    const closing = this.next();
+    if (closing.kind !== "rparen") throw new WhereClauseError('Expected ")" to close extract.');
+    this.comparisonCount += 1;
+    const operatorToken = this.next();
+    if (operatorToken.kind !== "operator" || !COMPARISON_OPERATORS.has(operatorToken.value)) {
+      throw new WhereClauseError(`Unsupported operator "${operatorToken.value}" after extract().`);
+    }
+    const value = this.next();
+    if (value.kind !== "number" || !/^\d+$/.test(value.value)) {
+      throw new WhereClauseError("extract() comparisons need a plain whole number.");
+    }
+    return `extract(${part.value} from ${spec.name}) ${operatorToken.value} ${value.value}`;
+  }
+
   private parseComparison(): string {
+    const upcoming = this.peek();
+    if (upcoming?.kind === "keyword" && upcoming.value === "extract") {
+      return this.parseExtract();
+    }
     const spec = this.column();
     this.comparisonCount += 1;
     const token = this.next();

@@ -138,6 +138,26 @@ export const defaultEntityExamples: IntentExampleSpec[] = [
     entities: { workflowStep: "query" },
   },
   {
+    question: "which supplier did we spend the most with",
+    intent: "rank_breakdown",
+    entities: { groupBy: "issuer" },
+  },
+  {
+    question: "welcher Lieferant hat am meisten bekommen",
+    intent: "rank_breakdown",
+    entities: { groupBy: "issuer" },
+  },
+  {
+    question: "which company spent the most this year",
+    intent: "rank_breakdown",
+    entities: { groupBy: "company" },
+  },
+  {
+    question: "Ausgaben pro Objekt",
+    intent: "rank_breakdown",
+    entities: { groupBy: "property" },
+  },
+  {
     question: "rejected invoices",
     intent: "search_invoices",
     entities: { workflowStep: "rejected" },
@@ -379,7 +399,7 @@ Entity rules:
 - dateMonth/dueDateMonth: the month number 1-12 when the question names a month WITHOUT any year — dueDateMonth for due/fällig wording, dateMonth otherwise. Never set these together with a date range for the same wording.
 - directDebit: true for Lastschrift/Einzug/direct debit, false for Überweisung/transfer wording, null when the payment method is not mentioned.
 - totalField: which total the answer must REPORT, only for money-total questions: 'vat' when it asks how much VAT/Umsatzsteuer was paid or invoiced, 'net' for net totals, else null (gross is the default). totalField is NEVER a filter: "invoices with 19% VAT" filters by a VAT rate and gives totalField=null with the constraint in topic instead.
-- groupBy: only for rank_breakdown — which dimension the ranking runs over.
+- groupBy: only for rank_breakdown — which dimension the ranking runs over. 'issuer' for a SUPPLIER/vendor/Lieferant ranking (who we paid), 'company' for OUR OWN company/Gesellschaft ranking (which of our companies spent), 'property' for Objekt/property, 'category' for cost category. These are different dimensions asking different questions — a supplier question is never a company ranking, and a company question is never a supplier ranking, even though both involve money paid to or by an entity.
 - topic: a short free-text phrase for any constraint or subject the question states that NO other entity can capture — a VAT rate ("VAT rate 19%"), a currency, a specific field condition, or a free-text theme. Losing a stated constraint is the worst possible outcome; when in doubt, put it here. null only when every part of the question is captured by the other entities.
 
 Worked examples — follow them exactly (entity keys not shown are null):

@@ -43,8 +43,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarProvider,
-  SidebarRail,
-  SidebarResizeHandle,
+  SidebarToggleHandle,
   SidebarTrigger,
   useSidebar,
 } from "../../ui/sidebar";
@@ -477,8 +476,7 @@ export function ShellSidebar({
 
       {footer && <SidebarFooter className="gap-2">{footer}</SidebarFooter>}
 
-      <SidebarRail />
-      <SidebarResizeHandle />
+      <SidebarToggleHandle />
     </Sidebar>
   );
 }

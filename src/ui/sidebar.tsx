@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
-import { PanelLeft } from "lucide-react";
+import { CircleArrowLeft, CircleArrowRight, PanelLeft } from "lucide-react";
 
 import { useIsMobile } from "../hooks/use-mobile";
 import { cn } from "../lib/class-names";
@@ -333,51 +333,96 @@ const SidebarRail = React.forwardRef<HTMLButtonElement, React.ComponentProps<"bu
 SidebarRail.displayName = "SidebarRail";
 
 /**
- * A drag handle on the sidebar's edge that resizes it, capped at half the viewport width.
+ * The single control on the sidebar's edge: one always-visible circular icon button that toggles
+ * collapsed/expanded, plus (while expanded, on desktop) a drag-to-resize strip on the same line.
  *
- * A separate element from SidebarRail on purpose: the rail already owns click-to-toggle, and
- * telling a click from a one-pixel drag on the same element is exactly the kind of cleverness
- * this kit's own rules ask us to avoid. Only rendered while expanded on desktop -- resizing a
- * collapsed icon rail, or a mobile sheet, is not a thing to support.
+ * Replaces the previous pairing of SidebarRail (an invisible full-height click-to-toggle strip)
+ * with a separate resize handle placed right next to it on the same edge -- the two hit-zones
+ * overlapped, so a click meant to toggle sometimes got captured by the resize handle's pointer
+ * capture instead, and vice versa ("expansion not working fine"). One component now owns the
+ * whole strip, and there is exactly one visible toggle affordance, never two: CircleArrowRight
+ * (arrow pointing OUT of the sidebar) to expand while collapsed, CircleArrowLeft (arrow pointing
+ * IN) to collapse while expanded. The drag strip is split into a segment above and a segment below
+ * that button so dragging still works from anywhere else on the line -- no guessing between a
+ * click and a drag on the same pixels, because they are no longer the same pixels.
  */
-const SidebarResizeHandle = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
+const SidebarToggleHandle = React.forwardRef<HTMLDivElement, React.ComponentProps<"div">>(
   ({ className, ...props }, ref) => {
-    const { state, isMobile, setWidth } = useSidebar();
+    const { state, isMobile, toggleSidebar, setWidth } = useSidebar();
+    const collapsed = state === "collapsed";
     const dragging = React.useRef(false);
 
-    if (state !== "expanded" || isMobile) return null;
+    if (isMobile) return null;
 
     // Left-side sidebar only: its own left edge sits at the window's x=0, so the pointer's own
     // clientX already is the width to apply. A right-side sidebar would need
     // window.innerWidth - clientX instead, left out until a Hub actually docks one there.
+    function startDrag(event: React.PointerEvent<HTMLDivElement>) {
+      dragging.current = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+    function drag(event: React.PointerEvent<HTMLDivElement>) {
+      if (!dragging.current) return;
+      setWidth(event.clientX);
+    }
+    function endDrag(event: React.PointerEvent<HTMLDivElement>) {
+      dragging.current = false;
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    const dragStripClass =
+      "absolute inset-x-0 cursor-col-resize touch-none hover:bg-sidebar-border active:bg-sidebar-border after:absolute after:inset-y-0 after:left-1/2 after:w-[2px]";
+
     return (
       <div
         ref={ref}
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize sidebar"
-        onPointerDown={(event) => {
-          dragging.current = true;
-          event.currentTarget.setPointerCapture(event.pointerId);
-        }}
-        onPointerMove={(event) => {
-          if (!dragging.current) return;
-          setWidth(event.clientX);
-        }}
-        onPointerUp={(event) => {
-          dragging.current = false;
-          event.currentTarget.releasePointerCapture(event.pointerId);
-        }}
+        data-sidebar="toggle-handle"
         className={cn(
-          "absolute inset-y-0 right-0 z-20 hidden w-1 cursor-col-resize touch-none hover:bg-sidebar-border active:bg-sidebar-border sm:block",
+          "absolute inset-y-0 z-20 hidden w-4 -translate-x-1/2 group-data-[side=left]:-right-4 group-data-[side=right]:left-0 sm:block",
           className,
         )}
         {...props}
-      />
+      >
+        {!collapsed && (
+          <>
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize sidebar"
+              className={cn(dragStripClass, "top-0 bottom-[calc(50%+18px)]")}
+              onPointerDown={startDrag}
+              onPointerMove={drag}
+              onPointerUp={endDrag}
+            />
+            <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize sidebar"
+              className={cn(dragStripClass, "top-[calc(50%+18px)] bottom-0")}
+              onPointerDown={startDrag}
+              onPointerMove={drag}
+              onPointerUp={endDrag}
+            />
+          </>
+        )}
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="absolute top-1/2 left-1/2 z-10 flex size-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-sm hover:bg-sidebar-accent"
+        >
+          {collapsed ? (
+            <CircleArrowRight className="size-4" aria-hidden />
+          ) : (
+            <CircleArrowLeft className="size-4" aria-hidden />
+          )}
+        </button>
+      </div>
     );
   },
 );
-SidebarResizeHandle.displayName = "SidebarResizeHandle";
+SidebarToggleHandle.displayName = "SidebarToggleHandle";
 
 const SidebarInset = React.forwardRef<HTMLDivElement, React.ComponentProps<"main">>(
   ({ className, ...props }, ref) => {
@@ -803,8 +848,8 @@ export {
   SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
-  SidebarResizeHandle,
   SidebarSeparator,
+  SidebarToggleHandle,
   SidebarTrigger,
   useSidebar,
 };

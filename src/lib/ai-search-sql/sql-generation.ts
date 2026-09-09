@@ -1,16 +1,23 @@
 import type { ModelJsonClient } from "./types";
 import type {
+  EntityMappingSpec,
   IntentClassification,
   IntentClassifierConfig,
-  IntentEntities,
   QueryColumnSpec,
+  QueryScopeSpec,
 } from "./types";
 import { validateWhereClause, WhereClauseError } from "./where-parser";
 
 export interface SqlGenerationConfig extends IntentClassifierConfig {
   columns: QueryColumnSpec[];
+  entityMappings: EntityMappingSpec[];
+  scope: QueryScopeSpec;
+  listColumns: string;
+  listOrderBy: string;
+  groupKeyExpressions: Record<string, string>;
+  aggregateColumns: { gross: string; net: string; vat: string; paidAt: string };
+  sqlTable: string;
   sqlModel?: ModelJsonClient;
-  sqlTable?: string;
   maxConditions?: number;
 }
 
@@ -32,18 +39,120 @@ const WHERE_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+function columnLabel(name: string, columns: QueryColumnSpec[]): string {
+  const column = columns.find((entry) => entry.name === name);
+  return column?.label ?? name.replace(/_/g, " ");
+}
+
+function withDeterministicAmbiguities(
+  modelAspects: string[],
+  matches: ColumnWordingMatches,
+  columns: QueryColumnSpec[],
+): string[] {
+  void matches;
+  return modelAspects.map((aspect) =>
+    columns.reduce(
+      (text, column) => text.replaceAll(column.name, columnLabel(column.name, columns)),
+      aspect,
+    ),
+  );
+}
+
+function wordingHints(matches?: ColumnWordingMatches): string {
+  if (!matches || (matches.selected.length === 0 && matches.ambiguous.length === 0)) return "";
+  const lines: string[] = ["", "WORDING MATCHES computed from the catalog (these are FACTS — obey them over your own reading):"];
+  for (const entry of matches.selected) {
+    lines.push(
+      `- the question's wording "${entry.wording}" names the column ${entry.column}: a constraint using this wording MUST be expressed on ${entry.column}, never marked unsupported.`,
+    );
+  }
+  for (const entry of matches.ambiguous) {
+    lines.push(
+      `- the question's word "${entry.wording}" matches SEVERAL columns (${entry.candidates.join(", ")}): for a TEXT match express it on all of them with OR; for a NUMERIC threshold do NOT express it — describe it in unsupportedAspects in the user's language, asking which of these it meant (plain words, no column identifiers).`,
+    );
+  }
+  return lines.join("\n");
+}
+
 function columnCatalog(columns: QueryColumnSpec[]): string {
   return columns
     .map((column) => {
       const values = column.values?.length ? ` Known values: ${column.values.join(", ")}.` : "";
-      return `- ${column.name} (${column.type}): ${column.description}${values}`;
+      const terms = column.terms?.length ? ` Users also call this: ${column.terms.join(", ")}.` : "";
+      return `- ${column.name} (${column.type}): ${column.description}${terms}${values}`;
     })
     .join("\n");
+}
+
+interface ColumnWordingMatches {
+  selected: { column: string; wording: string }[];
+  ambiguous: { wording: string; candidates: string[] }[];
+}
+
+function normalizeWording(text: string): string {
+  return text.toLowerCase().replace(/[_]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+export function matchColumnWording(
+  question: string,
+  columns: QueryColumnSpec[],
+): ColumnWordingMatches {
+  const normalizedQuestion = ` ${normalizeWording(question)} `;
+  const questionTokens = [...new Set(normalizedQuestion.split(" ").filter(Boolean))];
+  const wordAppears = (word: string) =>
+    questionTokens.some(
+      (token) =>
+        token === word ||
+        (word.length >= 4 && token.length >= 4 && (token.startsWith(word) || word.startsWith(token))),
+    );
+  const phraseAppears = (phrase: string) =>
+    phrase.includes(" ") ? normalizedQuestion.includes(` ${phrase} `) : wordAppears(phrase);
+
+  const phraseOwners = new Map<string, Set<string>>();
+  for (const column of columns) {
+    const phrases = [normalizeWording(column.name), ...(column.terms ?? []).map(normalizeWording)];
+    for (const phrase of phrases) {
+      if (!phrase) continue;
+      if (!phraseOwners.has(phrase)) phraseOwners.set(phrase, new Set());
+      phraseOwners.get(phrase)!.add(column.name);
+    }
+  }
+
+  const selected: { column: string; wording: string }[] = [];
+  const ambiguous: { wording: string; candidates: string[] }[] = [];
+  const coveredTokens = new Set<string>();
+  for (const [phrase, owners] of phraseOwners) {
+    if (!phraseAppears(phrase)) continue;
+    if (owners.size === 1) {
+      selected.push({ column: [...owners][0], wording: phrase });
+      for (const token of phrase.split(" ")) coveredTokens.add(token);
+    } else {
+      ambiguous.push({ wording: phrase, candidates: [...owners].sort() });
+    }
+  }
+
+  const tokenOwners = new Map<string, Set<string>>();
+  for (const [phrase, owners] of phraseOwners) {
+    for (const token of phrase.split(" ")) {
+      if (token.length < 3) continue;
+      if (!tokenOwners.has(token)) tokenOwners.set(token, new Set());
+      for (const owner of owners) tokenOwners.get(token)!.add(owner);
+    }
+  }
+  for (const [token, owners] of tokenOwners) {
+    if (owners.size < 2) continue;
+    if (coveredTokens.has(token)) continue;
+    if (ambiguous.some((entry) => entry.wording === token)) continue;
+    if (!wordAppears(token)) continue;
+    ambiguous.push({ wording: token, candidates: [...owners].sort() });
+  }
+  return { selected, ambiguous };
 }
 
 export function buildWhereGenerationInstructions(
   config: SqlGenerationConfig,
   retryError?: string,
+  wordingMatches?: ColumnWordingMatches,
 ): string {
   const retryNote = retryError
     ? `\n\nYOUR PREVIOUS ATTEMPT WAS REJECTED by the safety validator with this error: "${retryError}". Produce a corrected clause that satisfies every rule below.`
@@ -54,6 +163,7 @@ export function buildWhereGenerationInstructions(
 
 Allowed columns (the ONLY identifiers you may use — never invent one):
 ${columnCatalog(config.columns)}
+${wordingHints(wordingMatches)}
 
 Allowed syntax, nothing else:
 - comparisons: = <> > >= < <= on number and date columns; = <> on text and boolean columns
@@ -61,31 +171,38 @@ Allowed syntax, nothing else:
 - lists: column IN ('a', 'b'); negation: NOT, <>
 - ranges: column BETWEEN x AND y (number or date columns)
 - null checks: column IS NULL, column IS NOT NULL
+- month/year of a date column: extract(month from column) = N, extract(year from column) = N (whole numbers; the ONLY function allowed)
 - combining: AND, OR, parentheses
 - literals: numbers plain (1500.5), dates as 'YYYY-MM-DD' strings, text in single quotes ('' for a quote), booleans true/false
 
-You receive the user's question plus its classified intent and entities. The entities are ALREADY validated — company codes are real, dates are resolved. Build the expression from them:
-- entities.companies: an entry that equals a known company code → company_code = 'CODE' (several → IN list). An entry that is NOT a known code is an unresolved name typed by the user: match it as text with company_code ILIKE '%name%'.
-- entities.suppliers: each entry → issuer ILIKE '%entry%'. When company codes in entities.companies were resolved from the SAME ambiguous name as a supplier fragment (one bare name in the question, not two separately named entities), produce a single OR group: (issuer ILIKE '%name%' OR company_code IN ('CODE1', ...)), never two AND-ed conditions. Distinct named entities stay AND-ed.
-- Different entities are AND-ed; several suppliers are OR-ed with each other.
-- entities.paymentState: 'paid' → paid_at IS NOT NULL; 'open' → paid_at IS NULL; 'overdue' → paid_at IS NULL AND due_date < 'today (the date above)'.
-- entities.reviewState: 'needed' → (review_problem_count > 0 OR (review_unchecked = true AND status = 'zu_pruefen')); 'clear' → review_problem_count = 0 AND NOT (review_unchecked = true AND status = 'zu_pruefen'). Never use review_score for this.
-- entities.bankMatch: 'matched' → has_confirmed_bank_match = true; 'suggested' → has_suggested_bank_match = true AND has_confirmed_bank_match = false; 'unmatched' → has_confirmed_bank_match = false AND has_suggested_bank_match = false; 'any' → (has_confirmed_bank_match = true OR has_suggested_bank_match = true).
-- entities.unassignedCompany true → company_code IS NULL.
-- entities.datevHandover: 'done' → datev_handed_over_at IS NOT NULL; 'pending' → datev_handed_over_at IS NULL.
-- entities.trafficLight: a color → traffic_light = 'gruen'/'gelb'/'rot'; 'flagged' → traffic_light IN ('gelb', 'rot').
-- entities.documentType: use the document_type column with its known values.
-- entities.workflowStep: match the wording against workflow_status known values. Vague wording that plausibly covers several steps uses an IN list over ALL of them — never pick one reading.
-- entities.dateFrom/dateTo → document_date >= / <=; entities.dueDateFrom/dueDateTo → due_date >= / <=.
-- entities.amountMin/amountMax → amount_gross >= / <=.
-- entities.category → cost_category = 'the exact category name'.
-- entities.property → property_code = 'CODE' when it is a known code, else property_code ILIKE '%name%'.
-- entities.topic: express it ONLY when a listed column clearly states it (e.g. "VAT rate 19%" → vat_rate = 19). When no column expresses it, put the phrase into unsupportedAspects instead — NEVER approximate and NEVER drop it silently.
-- entities.directDebit: true → (payment_method ILIKE '%lastschrift%' OR payment_method ILIKE '%einzug%' OR payment_method ILIKE '%abbuch%'); false → payment_method IS NOT NULL AND NOT (payment_method ILIKE '%lastschrift%' OR payment_method ILIKE '%einzug%' OR payment_method ILIKE '%abbuch%'); null → nothing.
-- entities.archived is handled outside your clause: never mention archived_at.
-- Do not restate scope the system adds itself: no archived_at, no not_relevant_at.
+You receive the user's question plus its classified intent and entities. The entities are ALREADY validated — company codes are real, dates are resolved. Build the expression from them.
 
-whereClause is null when there is nothing to filter (no entities and no expressible topic). unsupportedAspects lists ONLY the stated constraints that are NOT in your whereClause — a constraint you expressed must NEVER also appear there, and one you could not express must ALWAYS appear there. Losing a constraint silently is the worst possible outcome.
+HOW EACH ENTITY MAPS TO COLUMNS (this app's own configuration — follow it exactly):
+${config.entityMappings.map((mapping) => `- ${mapping.entity}: ${mapping.rule}`).join("\n")}
+
+General rules:
+- Different entities are AND-ed unless a mapping above says otherwise.
+- MATCH BY MEANING, IN ANY LANGUAGE: the question may use German or English wording, and the column names, descriptions and user terms may be in either language too. A phrase selects a column when its MEANING matches that column's name, description or listed user terms — translate freely in both directions. Nothing outside this catalog defines what a word means.
+- AMBIGUOUS NAME OR TEXT terms cover every reading: a text match that could refer to several text columns is expressed on all of them combined with OR — a text either matches or it does not, so the union stays precise.
+- AMBIGUOUS NUMERIC terms are different: a threshold has ONE subject, and OR-ing two different measures answers a looser question than the one asked. When the measure a number applies to could be more than one listed column, do NOT express it — put it into unsupportedAspects, in the user's language, asking which measure was meant.
+- Every comparison needs a column its wording actually selects. A number whose accompanying word matches NO listed column at all goes into unsupportedAspects — never onto whichever column usually holds numbers.
+- SCALES AND UNITS: every comparison value must use the column's own scale as stated in its description — convert the question's units when they differ (a percentage against a 0-to-1 column becomes a fraction). Never compare raw question numbers against a column whose description states a different scale.
+- entities.archived is handled outside your clause. The system itself adds this base scope — never restate any part of it: ${config.scope.active.join(" and ")}.
+
+unsupportedAspects entries are shown to the END USER: write each one in the SAME language as the question, in plain words a non-technical reader understands. NEVER include internal column identifiers — describe a candidate column by the meaning its description states (for example the plain words for a recognition confidence or a review priority), and when a term was ambiguous, ask in that entry which meaning was intended.
+
+whereClause is null when there is nothing to filter (no entities and no expressible topic). unsupportedAspects lists ONLY the stated constraints that are NOT in your whereClause — a constraint you expressed must NEVER also appear there, and one you could not express must ALWAYS appear there. When you are unsure whether to express a constraint or mark it unsupported, mark it unsupported and leave it out of the clause. Losing a constraint silently is the worst possible outcome; guessing is the second worst.
+
+If exactly ONE listed column matches the wording (by its name, description or user terms), express it on that column and do not mention it in unsupportedAspects.
+
+Worked examples of the ambiguity rule — follow them exactly (T stands for any term the question uses, in any language):
+  Question says "T below 70" and the measure T plausibly matches TWO listed numeric columns:
+    RIGHT: whereClause omits it; unsupportedAspects asks, in the user's language and without column identifiers, which measure was meant
+    WRONG: whereClause contains column_a < 70 (a guessed single reading)
+    WRONG: whereClause contains (column_a < 0.7 or column_b < 70) — a threshold has one subject; the union answers a looser question
+  Question says "T below 70 percent" and the meaning of T matches ONLY column_a, whose description says it is stored 0 to 1:
+    RIGHT: whereClause contains column_a < 0.7; unsupportedAspects: []
+    WRONG: unsupportedAspects: ["T below 70 percent (could mean column_a)"] — one candidate is a match, not an ambiguity
 
 Return only JSON in the shape { "whereClause": string | null, "unsupportedAspects": string[] }.`;
 }
@@ -99,8 +216,9 @@ export async function generateWhereClause(
   let lastError: string | undefined;
   let rejected: string | null = null;
   for (let attempt = 0; attempt < 2; attempt += 1) {
+    const wordingMatches = matchColumnWording(query, config.columns);
     const raw = (await model.completeJson({
-      instructions: buildWhereGenerationInstructions(config, lastError),
+      instructions: buildWhereGenerationInstructions(config, lastError, wordingMatches),
       input: JSON.stringify({ question: query, classification }, null, 2),
       schemaName: "invoice_where_clause",
       schema: WHERE_SCHEMA,
@@ -111,13 +229,18 @@ export async function generateWhereClause(
           (aspect): aspect is string => typeof aspect === "string" && aspect.trim() !== "",
         )
       : [];
+    const finalAspects = withDeterministicAmbiguities(
+      unsupportedAspects,
+      wordingMatches,
+      config.columns,
+    );
     const candidate = typeof raw.whereClause === "string" ? raw.whereClause.trim() : null;
     if (!candidate) {
-      return { whereClause: null, rejectedWhereClause: null, unsupportedAspects };
+      return { whereClause: null, rejectedWhereClause: null, unsupportedAspects: finalAspects };
     }
     try {
       const normalized = validateWhereClause(candidate, config.columns, config.maxConditions);
-      return { whereClause: normalized, rejectedWhereClause: null, unsupportedAspects };
+      return { whereClause: normalized, rejectedWhereClause: null, unsupportedAspects: finalAspects };
     } catch (error) {
       if (!(error instanceof WhereClauseError)) throw error;
       lastError = error.message;
@@ -131,29 +254,16 @@ export async function generateWhereClause(
   };
 }
 
-const LIST_COLUMNS =
-  "id, invoice_number, issuer, document_date, due_date, amount_gross, company_code, property_code, cost_category, paid_at";
-
-function groupExpression(entities: IntentEntities, unassignedCode: string | null): string {
-  const dimension = entities.groupBy ?? "issuer";
-  if (dimension === "company") {
-    return unassignedCode ? `coalesce(company_code, '${unassignedCode}')` : "company_code";
-  }
-  if (dimension === "property") return "property_code";
-  if (dimension === "category") return "cost_category";
-  return "issuer";
-}
-
 export function composeQuery(
   classification: IntentClassification,
   whereClause: string | null,
   config: SqlGenerationConfig,
 ): string | null {
   if (classification.intent === "off_topic") return null;
-  const table = config.sqlTable ?? "v_invoices_review";
+  const table = config.sqlTable;
+  const { gross, net, vat, paidAt } = config.aggregateColumns;
   const scope = [
-    classification.entities.archived ? "archived_at is not null" : "archived_at is null",
-    "not_relevant_at is null",
+    ...(classification.entities.archived ? config.scope.archived : config.scope.active),
   ];
   if (whereClause) scope.push(`(${whereClause})`);
   const where = scope.join("\n  and ");
@@ -163,24 +273,25 @@ export function composeQuery(
   }
   if (classification.intent === "total_amount") {
     return (
-      `select\n  count(*) as invoice_count,\n  coalesce(sum(amount_gross), 0) as total_gross,\n` +
-      `  coalesce(sum(amount_net), 0) as total_net,\n  coalesce(sum(vat_amount), 0) as total_vat,\n` +
-      `  coalesce(sum(amount_gross) filter (where paid_at is not null), 0) as paid_gross,\n` +
-      `  coalesce(sum(amount_gross) filter (where paid_at is null), 0) as open_gross\n` +
+      `select\n  count(*) as invoice_count,\n  coalesce(sum(${gross}), 0) as total_gross,\n` +
+      `  coalesce(sum(${net}), 0) as total_net,\n  coalesce(sum(${vat}), 0) as total_vat,\n` +
+      `  coalesce(sum(${gross}) filter (where ${paidAt} is not null), 0) as paid_gross,\n` +
+      `  coalesce(sum(${gross}) filter (where ${paidAt} is null), 0) as open_gross\n` +
       `from ${table}\nwhere ${where};`
     );
   }
   if (classification.intent === "rank_breakdown") {
-    const groupKey = groupExpression(classification.entities, config.unassignedCompanyCode ?? null);
+    const dimension = classification.entities.groupBy ?? "issuer";
+    const groupKey = config.groupKeyExpressions[dimension] ?? config.groupKeyExpressions.issuer;
     return (
       `select\n  ${groupKey} as group_key,\n  count(*) as invoice_count,\n` +
-      `  coalesce(sum(amount_gross), 0) as total_gross,\n` +
-      `  coalesce(sum(amount_gross) filter (where paid_at is not null), 0) as paid_gross,\n` +
-      `  coalesce(sum(amount_gross) filter (where paid_at is null), 0) as open_gross\n` +
+      `  coalesce(sum(${gross}), 0) as total_gross,\n` +
+      `  coalesce(sum(${gross}) filter (where ${paidAt} is not null), 0) as paid_gross,\n` +
+      `  coalesce(sum(${gross}) filter (where ${paidAt} is null), 0) as open_gross\n` +
       `from ${table}\nwhere ${where}\ngroup by 1\nhaving ${groupKey} is not null\norder by total_gross desc\nlimit 5;`
     );
   }
-  return `select ${LIST_COLUMNS}\nfrom ${table}\nwhere ${where}\norder by document_date desc nulls last;`;
+  return `select ${config.listColumns}\nfrom ${table}\nwhere ${where}\norder by ${config.listOrderBy};`;
 }
 
 export async function generateSqlPreview(

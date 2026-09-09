@@ -83,6 +83,36 @@ export const defaultEntityExamples: IntentExampleSpec[] = [
     entities: { topic: "VAT rate 19%" },
   },
   {
+    question: "invoices with less than 70 score",
+    intent: "search_invoices",
+    entities: { topic: "score less than 70" },
+  },
+  {
+    question: "Rechnungen mit weniger als 70 Punkten",
+    intent: "search_invoices",
+    entities: { topic: "weniger als 70 Punkte" },
+  },
+  {
+    question: "invoices due in March",
+    intent: "search_invoices",
+    entities: { dueDateMonth: 3 },
+  },
+  {
+    question: "Rechnungen im August",
+    intent: "search_invoices",
+    entities: { dateMonth: 8 },
+  },
+  {
+    question: "invoices due in March 2025",
+    intent: "search_invoices",
+    entities: { dueDateFrom: "2025-03-01", dueDateTo: "2025-03-31" },
+  },
+  {
+    question: "Rechnungen von letztem Monat",
+    intent: "search_invoices",
+    entities: { dateFrom: "{lastMonthStart}", dateTo: "{lastMonthEnd}" },
+  },
+  {
     question: "How much VAT did we pay last month?",
     intent: "total_amount",
     entities: { paymentState: "paid", totalField: "vat" },
@@ -96,6 +126,21 @@ export const defaultEntityExamples: IntentExampleSpec[] = [
     question: "an DATEV übergebene Rechnungen",
     intent: "search_invoices",
     entities: { datevHandover: "done" },
+  },
+  {
+    question: "give me invoices which are in approval stage",
+    intent: "search_invoices",
+    entities: { workflowStep: "approval stage" },
+  },
+  {
+    question: "rejected invoices",
+    intent: "search_invoices",
+    entities: { workflowStep: "rejected" },
+  },
+  {
+    question: "abgeschlossene Rechnungen",
+    intent: "search_invoices",
+    entities: { workflowStep: "abgeschlossene" },
   },
   {
     question: "invoices with a red traffic light",
@@ -132,11 +177,18 @@ export const defaultEntityExamples: IntentExampleSpec[] = [
 function renderExamples(
   examples: IntentExampleSpec[],
   promptExamples: { companyCode: string; supplierName: string },
+  now: Date,
 ): string {
+  const startOfLastMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
+  const endOfLastMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 0));
+  const lastMonthStart = startOfLastMonth.toISOString().slice(0, 10);
+  const lastMonthEnd = endOfLastMonth.toISOString().slice(0, 10);
   const fill = (text: string) =>
     text
       .replaceAll("{company}", promptExamples.companyCode)
-      .replaceAll("{supplier}", promptExamples.supplierName);
+      .replaceAll("{supplier}", promptExamples.supplierName)
+      .replaceAll("{lastMonthStart}", lastMonthStart)
+      .replaceAll("{lastMonthEnd}", lastMonthEnd);
   const fillValue = (value: unknown): unknown => {
     if (typeof value === "string") return fill(value);
     if (Array.isArray(value)) return value.map(fillValue);
@@ -186,6 +238,8 @@ export function buildIntentClassificationSchema(intents: IntentSpec[]) {
           archived: { type: "boolean" },
           dueDateFrom: { type: ["string", "null"] },
           dueDateTo: { type: ["string", "null"] },
+          dateMonth: { type: ["number", "null"] },
+          dueDateMonth: { type: ["number", "null"] },
           directDebit: { type: ["boolean", "null"] },
           totalField: { type: ["string", "null"], enum: ["gross", "net", "vat", null] },
           groupBy: {
@@ -214,6 +268,8 @@ export function buildIntentClassificationSchema(intents: IntentSpec[]) {
           "archived",
           "dueDateFrom",
           "dueDateTo",
+          "dateMonth",
+          "dueDateMonth",
           "directDebit",
           "totalField",
           "groupBy",
@@ -236,6 +292,11 @@ export function buildIntentClassificationInstructions(
   const now = config.now ? config.now() : new Date();
   const today = now.toISOString().slice(0, 10);
   const unassignedCode = config.unassignedCompanyCode ?? null;
+  const workflowStepCatalog = config.workflowSteps?.length
+    ? ` This app's workflow steps are: ${config.workflowSteps
+        .map((step) => `${step.value} = ${step.meaning}`)
+        .join("; ")}. Wording whose MEANING names one of these steps, in any language, IS a workflow-step reference — still copy the question's own wording, never the step value. Wording about being paid, open or overdue stays in paymentState, never here.`
+    : "";
   const companyList =
     vocabulary.companies
       .filter((company) => company.code !== unassignedCode)
@@ -293,25 +354,26 @@ Entity rules:
 - NEVER drop a named entity. A question naming several companies or vendors ("invoices from ${config.promptExamples.supplierName} and Telekom") lists EVERY one of them — answering for a subset of the named entities answers a different question than the one asked.
 - A name that matches a company CODE or company name from the list above (any casing) is ALWAYS also a company reference, whatever wording surrounds it — "invoices from ${config.promptExamples.companyCode}" sets company='${config.promptExamples.companyCode}'. Vendor wording never outweighs an exact match against our own companies.
 - category: one of the listed cost categories when the question names that kind of expense, matched on meaning (electricity → the energy category). null when unsure — never guess the nearest-sounding one.
-- dateFrom/dateTo: resolve periods to full 'YYYY-MM-DD' ranges. Today is ${today}. "this year" is the whole calendar year, "last month" the whole previous month; an open-ended "since January" sets only dateFrom.
+- dateFrom/dateTo: resolve periods to full 'YYYY-MM-DD' ranges. Today is ${today}. "this year" is the whole calendar year, "last month" the whole previous month; an open-ended "since January" sets only dateFrom. A month named WITHOUT any year ("in August", "im August") is NOT resolved to a year: set dateMonth (or dueDateMonth for due/fällig wording) to the month number 1-12 and leave the date range fields null — inventing a year silently excludes other years.
 - amountMin/amountMax: per-invoice gross thresholds as plain numbers. German notation uses dot for thousands and comma for decimals ("1.500,50" is 1500.5); English is the reverse.
 - paymentState: 'paid' ONLY for pay verbs (bezahlt/gezahlt/beglichen/paid/settled), in EVERY phrasing including "did we pay"/"have we paid"; 'open' for unpaid/offen/outstanding; 'overdue' for überfällig/past due. Spending words (ausgegeben/spend/Kosten) are about invoiced volume and give null. The same question in German and English must classify identically.
 - reviewState: 'needed' when the question asks for invoices that need review/checking or have failed validation checks ("needs review", "zu prüfen", "with problems", "failed checks"); 'clear' when it asks for invoices whose checks all passed; null when review is not mentioned.
 - bankMatch: 'matched' ONLY when the wording clearly means a CONFIRMED bank-transaction match ("confirmed match", "zugeordnet", "bestätigter Bankabgleich"); 'suggested' ONLY for an explicit proposal that is still waiting ("Vorschlag", "suggested match"); 'unmatched' ONLY for explicitly none ("not matched", "ohne Bankabgleich"); 'any' when bank reconciliation is mentioned without saying which state ("with bank reconciliation", "where bank reconciliation happened") — it covers confirmed AND suggested, so no reading is picked; null when bank reconciliation is not mentioned at all. When wording does not clearly select one value of ANY choice entity, prefer the value that covers all readings over guessing one.
 - unassignedCompany: true ONLY when the question asks for invoices assigned to NO company ("without a company", "ohne Gesellschaft", "nicht zugeordnet", "keiner Gesellschaft zugeordnet"), false otherwise — a question that simply does not mention companies is false.
 - documentType: 'credit_note' for Gutschrift(en)/credit notes, 'other' for Sonstiges/other documents. 'invoice' ONLY when the question explicitly contrasts invoices against other document kinds ("nur Rechnungen, keine Gutschriften") — the bare word "invoices"/"Rechnungen" names the whole domain and gives null.
-- workflowStep: the approval/workflow step exactly as the question words it ("freigegeben", "in Prüfung", "approved by supervisor"), null unless a workflow step is explicitly referenced.
+- workflowStep: copy the question's OWN wording verbatim ("freigegeben", "approval stage", "approved by supervisor") — NEVER translate it, NEVER rewrite it into a step name it did not say; vague wording stays vague. Null unless a workflow step is referenced.${workflowStepCatalog}
 - datevHandover: 'done' when the question asks for invoices already handed over to DATEV ("an DATEV übergeben", "exported to DATEV"); 'pending' for not yet handed over; null when DATEV is not mentioned.
 - trafficLight: a named recognition-light color → 'green'/'yellow'/'red'; wording like "auffällig"/"flagged"/"problematic light" without a color → 'flagged' (covers yellow AND red, so no reading is picked); null otherwise.
 - archived: true ONLY when the question explicitly asks for archived invoices ("archiviert", "archived", "im Archiv"); false otherwise.
 - dueDateFrom/dueDateTo: 'YYYY-MM-DD' range for DUE/fällig wording ("fällig bis Ende September", "due this week"), resolved against today like dateFrom/dateTo. Never mix the two ranges up: dateFrom/dateTo is the invoice/document date, dueDateFrom/dueDateTo is the payment due date.
+- dateMonth/dueDateMonth: the month number 1-12 when the question names a month WITHOUT any year — dueDateMonth for due/fällig wording, dateMonth otherwise. Never set these together with a date range for the same wording.
 - directDebit: true for Lastschrift/Einzug/direct debit, false for Überweisung/transfer wording, null when the payment method is not mentioned.
 - totalField: which total the answer must REPORT, only for money-total questions: 'vat' when it asks how much VAT/Umsatzsteuer was paid or invoiced, 'net' for net totals, else null (gross is the default). totalField is NEVER a filter: "invoices with 19% VAT" filters by a VAT rate and gives totalField=null with the constraint in topic instead.
 - groupBy: only for rank_breakdown — which dimension the ranking runs over.
 - topic: a short free-text phrase for any constraint or subject the question states that NO other entity can capture — a VAT rate ("VAT rate 19%"), a currency, a specific field condition, or a free-text theme. Losing a stated constraint is the worst possible outcome; when in doubt, put it here. null only when every part of the question is captured by the other entities.
 
 Worked examples — follow them exactly (entity keys not shown are null):
-${renderExamples(config.entityExamples ?? defaultEntityExamples, config.promptExamples)}
+${renderExamples(config.entityExamples ?? defaultEntityExamples, config.promptExamples, now)}
 
 confidence is your certainty in the chosen intent between 0 and 1.
 language is the language the request is written in: 'de' or 'en' ('de' when it is no language at all). Base it only on the request's own wording, never on the master data above.
@@ -408,6 +470,12 @@ function asDate(value: unknown): string | null {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
 }
 
+function asMonth(value: unknown): number | null {
+  return typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 12
+    ? value
+    : null;
+}
+
 function asAmount(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -478,8 +546,8 @@ export async function classifyIntent(
     suppliers,
     property: resolveCode(asText(rawEntities.property), vocabulary.properties),
     category: resolveCategory(asText(rawEntities.category), vocabulary),
-    dateFrom: asDate(rawEntities.dateFrom),
-    dateTo: asDate(rawEntities.dateTo),
+    dateFrom: asMonth(rawEntities.dateMonth) ? null : asDate(rawEntities.dateFrom),
+    dateTo: asMonth(rawEntities.dateMonth) ? null : asDate(rawEntities.dateTo),
     amountMin: asAmount(rawEntities.amountMin),
     amountMax: asAmount(rawEntities.amountMax),
     paymentState: asChoice(rawEntities.paymentState, ["open", "paid", "overdue"] as const),
@@ -494,8 +562,10 @@ export async function classifyIntent(
       "flagged",
     ] as const),
     archived: rawEntities.archived === true,
-    dueDateFrom: asDate(rawEntities.dueDateFrom),
-    dueDateTo: asDate(rawEntities.dueDateTo),
+    dueDateFrom: asMonth(rawEntities.dueDateMonth) ? null : asDate(rawEntities.dueDateFrom),
+    dueDateTo: asMonth(rawEntities.dueDateMonth) ? null : asDate(rawEntities.dueDateTo),
+    dateMonth: asMonth(rawEntities.dateMonth),
+    dueDateMonth: asMonth(rawEntities.dueDateMonth),
     directDebit: typeof rawEntities.directDebit === "boolean" ? rawEntities.directDebit : null,
     bankMatch: asChoice(rawEntities.bankMatch, [
       "any",

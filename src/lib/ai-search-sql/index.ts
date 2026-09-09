@@ -11,6 +11,7 @@ export type {
   IntentExampleSpec,
   IntentSpec,
   EmbeddingClient,
+  EntityMappingSpec,
   GroupByDimension,
   GroupedTotalRow,
   InvoiceMatch,
@@ -19,10 +20,12 @@ export type {
   ModelJsonRequest,
   QueryColumnSpec,
   QueryColumnType,
+  QueryScopeSpec,
   SumField,
   SqlRetrievalResult,
   SqlSearchExecutor,
   SqlSearchIntent,
+  WorkflowStepSpec,
 } from "./types";
 export {
   buildIntentClassificationInstructions,

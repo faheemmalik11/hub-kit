@@ -1,6 +1,6 @@
 {
   "name": "@hub-kit/core",
-  "version": "0.3.65",
+  "version": "0.4.0",
   "description": "Shared pages, components and theme system for all Hub projects.",
   "type": "module",
   "files": [
@@ -31,6 +31,10 @@
     "./ai-search-sql/ui": "./dist/components/ai-search-sql/index.js",
     "./ai-search/ui": "./dist/components/ai-search/index.js",
     "./filters": "./dist/components/filters/index.js",
+    "./bulk-actions": "./dist/components/bulk-actions/index.js",
+    "./invoice-payment-link": "./dist/components/invoice-payment-link/index.js",
+    "./invoice-workflow": "./dist/components/invoice-workflow/index.js",
+    "./bank-matching": "./dist/lib/bank-matching/index.js",
     "./pages/document-sources": "./dist/pages/document-sources/index.js",
     "./pages/document-sources/tanstack": "./dist/pages/document-sources/tanstack-router.js"
   },

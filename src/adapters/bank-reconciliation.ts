@@ -50,14 +50,29 @@ export interface BankInvoiceSearchResult {
   documentDate: string | null;
 }
 
+export interface BankMatchingSettingsRecord {
+  amount_tolerance: number;
+  auto_match_threshold: number;
+  candidate_threshold: number;
+}
+
 export interface BankReconciliationAdapter {
   useAccounts(): { data: BankAccountRecord[]; loading: boolean; error: unknown };
   useTransactions(): { data: BankTransactionRecord[]; loading: boolean; error: unknown };
   useCompanyOptions?(): { data: { code: string; name: string }[]; loading: boolean };
 
   useCandidates(transactionId: string): { data: BankMatchCandidate[]; loading: boolean };
-  confirmMatch(transactionId: string, invoiceId: string): Promise<void>;
+  confirmMatch(
+    transactionId: string,
+    invoiceId: string,
+    options?: { differenceReason?: string; fullyCovered?: boolean },
+  ): Promise<void>;
   rejectMatch(transactionId: string, invoiceId: string): Promise<void>;
+  useMatchingSettings?(): {
+    data: BankMatchingSettingsRecord | null;
+    loading: boolean;
+    update: (patch: Partial<BankMatchingSettingsRecord>) => Promise<void>;
+  };
 
   noReceipt?: {
     mark(transactionId: string, reason: string): Promise<void>;

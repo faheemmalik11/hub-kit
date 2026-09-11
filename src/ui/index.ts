@@ -33,6 +33,8 @@ export * from "./sidebar";
 export * from "./breadcrumb";
 export * from "./collapsible";
 export * from "./sonner";
+export { Avatar, avatarInitials } from "./avatar";
+export type { AvatarSize } from "./avatar";
 export { IconAction } from "./icon-action";
 export { InfoTip, InfoTipButton } from "./info-tip";
 export { CopyButton, englishCopyButtonLabels } from "./copy-button";

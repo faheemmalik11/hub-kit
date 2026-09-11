@@ -1,6 +1,7 @@
 export { englishProcessingLogLabels } from "../pages/processing-log/labels";
 export { englishNotificationsPageLabels } from "../pages/notifications/labels";
 export { englishTeamPageLabels } from "../pages/team/labels";
+export { englishProfileLabels } from "../pages/profile/labels";
 export { englishTrashPageLabels } from "../pages/trash/labels";
 export { englishCustomersLabels } from "../pages/customers/labels";
 export { englishCompaniesLabels } from "../pages/companies/labels";

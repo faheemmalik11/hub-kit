@@ -20,6 +20,7 @@ export type {
   TeamRole,
   CreatedAccount,
 } from "./team";
+export type { ProfileAdapter, ProfileUser } from "./profile";
 export type { TrashAdapter, TrashedRecord, TrashTableNames } from "./trash";
 export type {
   CustomersAdapter,

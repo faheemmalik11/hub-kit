@@ -30,6 +30,8 @@ export interface UnlinkMatchLabels {
   failed: (message: string) => string;
   /** Shown when the error carries no message of its own. */
   unknownError: string;
+  /** Marks the reason field as required, for a screen reader and on hover. */
+  requiredHint?: string;
 }
 
 export const englishUnlinkMatchLabels: UnlinkMatchLabels = {
@@ -37,7 +39,7 @@ export const englishUnlinkMatchLabels: UnlinkMatchLabels = {
   title: "Unlink this bank transaction?",
   description:
     "The transaction goes back to being a suggestion, so it can be linked again. The invoice keeps its history.",
-  reasonLabel: "Reason (optional)",
+  reasonLabel: "Reason",
   reasonPlaceholder: "Why is the link wrong?",
   cancel: "Cancel",
   confirm: "Unlink",
@@ -45,6 +47,7 @@ export const englishUnlinkMatchLabels: UnlinkMatchLabels = {
   done: "Link released",
   failed: (message) => "Nothing was changed. " + message,
   unknownError: "Unknown error.",
+  requiredHint: "Required",
 };
 
 /**
@@ -110,7 +113,16 @@ export function UnlinkMatchButton({
           </AlertDialogHeader>
           {withReason && (
             <div className="space-y-1.5">
-              <Label htmlFor="unlink-match-reason">{labels.reasonLabel}</Label>
+              <Label htmlFor="unlink-match-reason">
+                {labels.reasonLabel}{" "}
+                {/* REQUIRED whenever the field is shown. Unlinking undoes a payment: the invoice
+                    goes back through the chain and the transaction reopens, and this text is the
+                    only record of why. A host that genuinely wants no reason passes
+                    withReason={false} rather than leaving an optional box people skip. */}
+                <span className="text-destructive" title={labels.requiredHint}>
+                  *
+                </span>
+              </Label>
               <Textarea
                 id="unlink-match-reason"
                 value={reason}
@@ -122,7 +134,7 @@ export function UnlinkMatchButton({
           )}
           <AlertDialogFooter>
             <AlertDialogCancel disabled={busy}>{labels.cancel}</AlertDialogCancel>
-            <Button onClick={run} disabled={busy}>
+            <Button onClick={run} disabled={busy || (withReason && reason.trim() === "")}>
               {busy ? labels.running : labels.confirm}
             </Button>
           </AlertDialogFooter>

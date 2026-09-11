@@ -15,8 +15,21 @@ const AlertDialogOverlay = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Overlay>
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Overlay
+    // CLICKING OUTSIDE CLOSES IT. Radix suppresses that for AlertDialog on purpose, so the exit
+    // is triggered here, on the overlay, which is the "outside" being clicked. Routed to Cancel
+    // rather than a bare dismiss: a stray click can then only ever take the harmless exit, never
+    // the confirm, and whatever handler the caller put on Cancel still runs. A dialog with no
+    // Cancel stays sticky, which is right, because it has no safe exit to take.
+    onClick={() => {
+      document
+        .querySelector<HTMLElement>('[role="alertdialog"] [data-alert-cancel]')
+        ?.click();
+    }}
     className={cn(
-      "fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      // pointer-events-auto is what makes the overlay click reachable at all. DismissableLayer
+      // puts `pointer-events: none` on the body and re-enables it only on the content, so the
+      // overlay inherits none and every click on it lands on nothing.
+      "pointer-events-auto fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -105,6 +118,7 @@ const AlertDialogCancel = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <AlertDialogPrimitive.Cancel
     ref={ref}
+    data-alert-cancel
     className={cn(buttonVariants({ variant: "outline" }), className)}
     {...props}
   />

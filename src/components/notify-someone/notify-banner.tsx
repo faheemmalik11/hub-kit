@@ -85,7 +85,10 @@ export function NotifyBanner({
   return (
     <div
       className={cn(
-        "fixed right-4 top-4 z-[60] w-[min(24rem,calc(100vw-2rem))]",
+        // pointer-events-none on the container, auto on each card. The container is a tall
+        // fixed box and the page's own header controls sit underneath it, so without this the
+        // empty space between and below the cards silently swallows clicks meant for them.
+        "pointer-events-none fixed right-4 top-4 z-[60] w-[min(24rem,calc(100vw-2rem))]",
         className,
       )}
     >
@@ -100,7 +103,7 @@ export function NotifyBanner({
               // `grid-rows-[0fr]` to `[1fr]` is what makes a height transition possible without
               // measuring the content first.
               className={cn(
-                "grid transition-all ease-out motion-reduce:transition-none",
+                "pointer-events-auto grid transition-all ease-out motion-reduce:transition-none",
                 isLeaving
                   ? "grid-rows-[0fr] opacity-0"
                   : "grid-rows-[1fr] opacity-100",

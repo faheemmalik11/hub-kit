@@ -24,27 +24,27 @@ export function PermissionChecklist({
   categoryLabel?: (category: string) => string;
   className?: string;
 }) {
-  const gruppen = useMemo(() => {
-    const nach = new Map<string, AccessPermission[]>();
+  const groups = useMemo(() => {
+    const byCategory = new Map<string, AccessPermission[]>();
     for (const p of permissions) {
-      if (!nach.has(p.category)) nach.set(p.category, []);
-      nach.get(p.category)!.push(p);
+      if (!byCategory.has(p.category)) byCategory.set(p.category, []);
+      byCategory.get(p.category)!.push(p);
     }
-    return [...nach.entries()];
+    return [...byCategory.entries()];
   }, [permissions]);
 
-  const gehalten = useMemo(() => new Set(held), [held]);
+  const heldKeys = useMemo(() => new Set(held), [held]);
 
-  if (gruppen.length === 0) return null;
+  if (groups.length === 0) return null;
 
   return (
     <div className={cn("space-y-3", className)}>
       {disabled && readOnlyNote && <p className="text-sm text-muted-foreground">{readOnlyNote}</p>}
-      {gruppen.map(([kategorie, eintraege]) => (
-        <div key={kategorie}>
-          <div className="text-sm font-semibold text-foreground">{categoryLabel(kategorie)}</div>
+      {groups.map(([category, entries]) => (
+        <div key={category}>
+          <div className="text-sm font-semibold text-foreground">{categoryLabel(category)}</div>
           <div className="mt-1.5 grid gap-x-3 gap-y-0.5 sm:grid-cols-2">
-            {eintraege.map((p) => (
+            {entries.map((p) => (
               <label
                 key={p.key}
                 title={p.description ?? undefined}
@@ -54,7 +54,7 @@ export function PermissionChecklist({
                 )}
               >
                 <Checkbox
-                  checked={gehalten.has(p.key)}
+                  checked={heldKeys.has(p.key)}
                   disabled={disabled}
                   onCheckedChange={(checked) => onToggle(p.key, checked === true)}
                   aria-label={p.label}

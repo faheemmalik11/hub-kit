@@ -56,7 +56,10 @@ export interface ProfileLabels {
     description: string;
     roleLabel: string;
     permissionsLabel: string;
-    permissionCount: (held: number, total: number) => string;
+    /** Sits next to the "Permissions" heading, so the bare number reads as a count. */
+    permissionCount: (count: number) => string;
+    /** Says where a change is made, which differs per viewer: an owner holds everything anyway, an
+     *  administrator changes it themselves, everybody else has to ask one. */
     readOnlyNote: string;
     categoryLabel: (categoryKey: string) => string;
     roleLabelText: (roleName: string) => string;
@@ -119,11 +122,11 @@ export const englishProfileLabels: ProfileLabels = {
   },
   access: {
     title: "Role and permissions",
-    description: "What your account may do. Only an administrator can change this.",
+    description: "What your account may do.",
     roleLabel: "Role",
     permissionsLabel: "Permissions",
-    permissionCount: (held, total) => `${held} of ${total}`,
-    readOnlyNote: "This list only shows what you hold. Ask an administrator for a change.",
+    permissionCount: (count) => String(count),
+    readOnlyNote: "This list shows what you hold. It is not changed on this screen.",
     categoryLabel: (categoryKey) => categoryKey,
     roleLabelText: (roleName) => roleName,
     empty: "No permissions are set for your account.",

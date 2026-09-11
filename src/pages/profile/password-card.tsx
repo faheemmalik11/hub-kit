@@ -37,7 +37,7 @@ export function PasswordCard({
   async function changePassword() {
     setIsSaving(true);
     try {
-      await adapter.changePassword({ currentPassword, newPassword: nextPassword });
+      await adapter.changePassword?.({ currentPassword, newPassword: nextPassword });
       setCurrentPassword("");
       setNextPassword("");
       setRepeatedPassword("");
@@ -58,7 +58,7 @@ export function PasswordCard({
         <CardDescription>{passwordLabels.description}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {adapter.canChangePassword ? (
+        {adapter.changePassword ? (
           <>
             <div className="space-y-1.5">
               <Label htmlFor="current-password">{passwordLabels.current}</Label>

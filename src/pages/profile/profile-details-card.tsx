@@ -25,6 +25,7 @@ export function ProfileDetailsCard({
   const [email, setEmail] = useState(user.email);
   const [isSaving, setIsSaving] = useState(false);
   const detailLabels = labels.details;
+  const canChangeEmail = !!adapter.updateEmail;
 
   // Pick up a change made elsewhere, for example by an administrator.
   useEffect(() => {
@@ -56,7 +57,7 @@ export function ProfileDetailsCard({
     setIsSaving(true);
     try {
       if (nameChanged) await adapter.updateName({ name: trimmedName });
-      if (emailChanged) await adapter.updateEmail({ email: trimmedEmail });
+      if (emailChanged) await adapter.updateEmail?.({ email: trimmedEmail });
       toast.success(detailLabels.saved);
     } catch (error) {
       toast.error(detailLabels.failed(readableErrorMessage(error, "")));
@@ -89,7 +90,7 @@ export function ProfileDetailsCard({
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              disabled={isSaving || !adapter.canChangeEmail}
+              disabled={isSaving || !canChangeEmail}
               aria-invalid={emailInvalid}
             />
             {emailInvalid && <p className="text-xs text-warning">{detailLabels.emailInvalid}</p>}
@@ -97,7 +98,7 @@ export function ProfileDetailsCard({
         </div>
 
         <p className="text-xs text-muted-foreground">
-          {adapter.canChangeEmail ? detailLabels.emailHint : detailLabels.emailLocked}
+          {canChangeEmail ? detailLabels.emailHint : detailLabels.emailLocked}
         </p>
 
         <div className="flex justify-end">

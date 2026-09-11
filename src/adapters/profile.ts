@@ -19,9 +19,10 @@ export interface ProfileAdapter {
   /** Every grantable permission, so the page can show what is held and what is not. */
   usePermissionCatalogue(): QueryResult<AccessPermission[]>;
   updateName(input: { name: string }): Promise<void>;
-  /** Changing the email also changes the login, so projects may ask for a confirmation step. */
-  updateEmail(input: { email: string }): Promise<void>;
-  changePassword(input: { currentPassword: string; newPassword: string }): Promise<void>;
+  /** Left out when a project keeps the sign-in email in an administrator's hands. */
+  updateEmail?(input: { email: string }): Promise<void>;
+  /** Left out when a project signs people in through an outside identity provider. */
+  changePassword?(input: { currentPassword: string; newPassword: string }): Promise<void>;
   /** Stores the picture and answers with the url to show from now on. */
   uploadPicture(input: { file: File }): Promise<string>;
   removePicture(): Promise<void>;
@@ -31,7 +32,4 @@ export interface ProfileAdapter {
   maxPictureSizeBytes: number;
   /** Image types the project accepts, e.g. ["image/png", "image/jpeg"]. */
   acceptedPictureTypes: string[];
-  /** Set to false when a project signs people in through an outside identity provider. */
-  canChangeEmail: boolean;
-  canChangePassword: boolean;
 }

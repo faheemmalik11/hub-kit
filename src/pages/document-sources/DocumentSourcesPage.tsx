@@ -1,17 +1,20 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CheckCircle2,
   CircleHelp,
   Clock,
   History,
   Info,
+  Loader2,
   PauseCircle,
   Plus,
+  RefreshCw,
 } from "lucide-react";
 
 import type {
   DocumentSource,
   DocumentSourcesAdapter,
+  SourceRunRequest,
 } from "../../adapters/document-sources";
 import { Button } from "../../ui/button";
 import { ErrorState } from "../../components/feedback/query-states";
@@ -192,6 +195,11 @@ export function DocumentSourcesPage({
               onConnect={
                 adapter.connect ? () => adapter.connect?.(source.id) : undefined
               }
+              onAskForARun={
+                adapter.askForARun
+                  ? () => adapter.askForARun?.(source.id) ?? Promise.resolve()
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -250,23 +258,87 @@ export function DocumentSourcesPage({
   );
 }
 
+/** What a run somebody asked for is doing. Nothing at all until somebody asks. */
+function RunRequestLine({
+  request,
+  labels,
+}: {
+  request: SourceRunRequest | undefined;
+  labels: DocumentSourcesLabels;
+}) {
+  if (!request || request.status === "idle") return null;
+
+  if (request.status === "pending" || request.status === "running") {
+    const text =
+      request.status === "running" ? labels.runNowRunning : labels.runNowAsked;
+    if (!text) return null;
+    return (
+      <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Loader2 className="size-3 animate-spin" />
+        {text}
+      </p>
+    );
+  }
+
+  if (request.status === "failed") {
+    // The note says what went wrong and what to do, so it is shown rather than summarised.
+    return (
+      <p className="mt-1 text-xs text-destructive" title={request.note ?? undefined}>
+        {labels.runNowFailed}
+        {request.note ? `: ${request.note}` : ""}
+      </p>
+    );
+  }
+
+  const found = labels.runNowFound?.(request.processedCount ?? 0);
+  if (!found) return null;
+  return (
+    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+      <CheckCircle2 className="size-3 text-emerald-600" />
+      {found}
+    </p>
+  );
+}
+
 function SourceRow({
   source,
   labels,
   LinkComponent,
   onOpen,
   onConnect,
+  onAskForARun,
 }: {
   source: DocumentSource;
   labels: DocumentSourcesLabels;
   LinkComponent: DocumentSourcesRouter["Link"];
   onOpen: () => void;
   onConnect?: () => void;
+  onAskForARun?: () => Promise<void>;
 }) {
   const selectedItems = source.selectedItems ?? [];
   const hasSelectedItems = selectedItems.length > 0;
   const needsConnect =
     source.status === "not_connected" && onConnect !== undefined;
+
+  // Asking is optimistic: the row reaches us over Realtime, and until it does the button would
+  // otherwise sit there looking as though the press did nothing.
+  const [asking, setAsking] = useState(false);
+  const status = source.runRequest?.status ?? "idle";
+  const busy = asking || status === "pending" || status === "running";
+  // Nothing to run for a source that is not connected yet, and no button without a label for it.
+  const canRunNow =
+    onAskForARun !== undefined &&
+    labels.runNow !== undefined &&
+    source.status === "connected";
+
+  async function ask() {
+    setAsking(true);
+    try {
+      await onAskForARun?.();
+    } finally {
+      setAsking(false);
+    }
+  }
   const actionLabel = needsConnect
     ? labels.connect
     : source.status === "not_configured"
@@ -314,8 +386,26 @@ function SourceRow({
             {source.statusDetail}
           </p>
         )}
+        <RunRequestLine request={source.runRequest} labels={labels} />
       </div>
-      <div className="flex shrink-0 justify-end">
+      <div className="flex shrink-0 items-center justify-end gap-2">
+        {canRunNow && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            disabled={busy}
+            onClick={ask}
+            title={labels.runNow}
+          >
+            {busy ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <RefreshCw className="size-4" />
+            )}
+            <span className="ml-1.5">{labels.runNow}</span>
+          </Button>
+        )}
         {source.fields.length > 0 || needsConnect ? (
           <Button
             type="button"

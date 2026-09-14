@@ -21,7 +21,8 @@ function Calendar({
   buttonVariant?: React.ComponentProps<typeof Button>["variant"];
 }) {
   const defaultClassNames = getDefaultClassNames();
-  const monthDropdownLocale = locale?.code ?? "en-US";
+  // react-day-picker v9 dropped `code` from its own locale type; date-fns locales still carry it.
+  const monthDropdownLocale = (locale as { code?: string } | undefined)?.code ?? "en-US";
 
   return (
     <DayPicker

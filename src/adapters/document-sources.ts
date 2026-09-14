@@ -45,6 +45,17 @@ export interface SourceActor {
   role?: string;
 }
 
+/** Where a "run now" has got to. Mirrors pipeline_run_requests.status, plus `idle` for "never asked". */
+export type RunRequestStatus = "idle" | "pending" | "running" | "done" | "failed";
+
+export interface SourceRunRequest {
+  status: RunRequestStatus;
+  /** What the pipeline wrote when it finished: the counts, or why it could not run. */
+  note?: string | null;
+  /** New documents this run found. Null until it has finished. */
+  processedCount?: number | null;
+}
+
 export interface DocumentSource {
   id: string;
   kind: SourceKind;
@@ -59,6 +70,8 @@ export interface DocumentSource {
   selectedItemsLabel?: string;
   selectedItemsLoading?: boolean;
   runs?: SourceRun[];
+  /** Live state of a run somebody asked for. Absent where the hub has not wired `askForARun`. */
+  runRequest?: SourceRunRequest;
   fields: SourceField[];
 }
 
@@ -90,4 +103,12 @@ export interface DocumentSourcesAdapter {
   testConnection?(sourceId: string): Promise<ConnectionTestResult>;
   connect?(sourceId: string): void;
   addSource?(): void;
+  /**
+   * Ask the pipeline to read this source now, rather than at its next scheduled run.
+   *
+   * The kit only asks. What it is doing afterwards arrives as `runRequest` on the source, which
+   * the hub keeps live — so a run somebody else started shows here too. Leave it out and no
+   * button is rendered.
+   */
+  askForARun?(sourceId: string): Promise<void>;
 }

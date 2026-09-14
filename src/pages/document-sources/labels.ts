@@ -20,6 +20,12 @@ export interface DocumentSourcesLabels {
   open?: string;
   connect: string;
   setUp: string;
+  /** The "run now" button. Absent labels hide it as surely as an absent adapter method. */
+  runNow?: string;
+  runNowAsked?: string;
+  runNowRunning?: string;
+  runNowFound?: (count: number) => string;
+  runNowFailed?: string;
   footerTitle: string;
   footerDetail: string;
   nextRun?: string;
@@ -71,6 +77,12 @@ export const englishDocumentSourcesLabels: DocumentSourcesLabels = {
   open: "Open",
   connect: "Connect",
   setUp: "Set up",
+  runNow: "Run now",
+  runNowAsked: "Asked for",
+  runNowRunning: "Running…",
+  runNowFound: (count: number) =>
+    count === 1 ? "1 new document" : `${count} new documents`,
+  runNowFailed: "Could not run",
   footerTitle: "Configurations are used by the filing service",
   footerDetail:
     "Changes you make here are applied the next time documents are processed.",

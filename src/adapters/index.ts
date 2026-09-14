@@ -121,7 +121,9 @@ export type {
   SourceActor,
   SourceKind,
   SourceRun,
+  SourceRunRequest,
   SourceStatus,
+  RunRequestStatus,
 } from "./document-sources";
 export type {
   ApprovalRulesAdapter,

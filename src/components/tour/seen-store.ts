@@ -28,8 +28,16 @@ function readEntries(): StoredEntry[] {
   }
 }
 
-export function hasSeenTour(tourId: string, version = 1): boolean {
-  return readEntries().some((entry) => entry.id === tourId && entry.version >= version);
+/**
+ * SEEN IS SEEN. The version is recorded but no longer gates this.
+ *
+ * It used to require `entry.version >= version`, so bumping a tour's version replayed it for
+ * everybody who had already sat through it. In practice that reads as the app forgetting, and it
+ * cost the client's trust in a screen they had already been walked through. A tour worth showing
+ * again is a new tour with a new id.
+ */
+export function hasSeenTour(tourId: string, _version = 1): boolean {
+  return readEntries().some((entry) => entry.id === tourId);
 }
 
 export function markTourSeen(tourId: string, version = 1): void {

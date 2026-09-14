@@ -1,4 +1,4 @@
-import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { englishTourLabels, type TourLabels } from "./labels";
 import { findTourTarget } from "./find-target";
@@ -37,9 +37,35 @@ export function TourProvider({
     setStepIndex(0);
   }, []);
 
+  // LEAVING THE PAGE ENDS THE TOUR, AND ENDING IT COUNTS. This used to call close() alone, which
+  // resets the state and records nothing, so a tour somebody had actually sat through came back on
+  // their next visit. The onboarding tour felt it worst: its checklist rows are links to the screen
+  // where each step is done, so following one is the ordinary way to leave, not an escape.
+  //
+  // Recorded as 'skipped' rather than 'completed'. They saw it and moved on, which is what skip
+  // already means, and claiming they finished it would overstate what happened.
+  const leaving = useRef<{ close: () => void; markSeen: TourSeenStore["markSeen"]; open: { id: string; version: number; step: number } | null }>({
+    close,
+    markSeen: seenStore.markSeen,
+    open: null,
+  });
+  leaving.current = {
+    close,
+    markSeen: seenStore.markSeen,
+    open: isOpen && tour ? { id: tour.id, version: tour.version ?? 1, step: stepIndex } : null,
+  };
+
   useEffect(() => {
-    close();
-  }, [pathname, close]);
+    const { open, markSeen, close: closeTour } = leaving.current;
+    if (open) {
+      markSeen(open.id, open.version, { status: "skipped", lastStep: open.step });
+    }
+    closeTour();
+    // PATHNAME ONLY. Everything else is read through the ref on purpose: `seenStore` is rebuilt
+    // whenever the stored rows change, and the markSeen above changes them, so listing it here
+    // would re-enter this effect and close the tour a second time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const tourId = tour?.id ?? null;
   const tourVersion = tour?.version ?? 1;

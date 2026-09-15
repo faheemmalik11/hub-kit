@@ -260,6 +260,10 @@ export function DocumentSourcesPage({
   );
 }
 
+function withoutTrailingDots(text: string): string {
+  return text.replace(/\s*(…|\.\.\.)$/, "");
+}
+
 /** What a run somebody asked for is doing. Nothing at all until somebody asks. */
 function RunRequestLine({
   request,
@@ -280,12 +284,13 @@ function RunRequestLine({
     const text =
       request.status === "running" ? labels.runNowRunning : labels.runNowAsked;
     if (!text) return null;
+    // The only sign a run is going, so it always says what is being read.
+    const what = folders ?? labels.runNowReadingUsual ?? labels.runNowDialog?.defaultRun;
     return (
-      <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Loader2 className="size-3 shrink-0 animate-spin" />
-        <span className="truncate" title={folders ?? undefined}>
-          {text}
-          {folders && ` · ${folders}`}
+      <p className="mt-2.5 flex items-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="size-3.5 shrink-0 animate-spin" />
+        <span className="truncate" title={what ?? undefined}>
+          {what ? `${withoutTrailingDots(text)} · ${what}` : text}
         </span>
       </p>
     );
@@ -294,7 +299,7 @@ function RunRequestLine({
   if (request.status === "failed") {
     // The note says what went wrong and what to do, so it is shown rather than summarised.
     return (
-      <p className="mt-1 text-xs text-destructive" title={request.note ?? undefined}>
+      <p className="mt-2.5 text-sm text-destructive" title={request.note ?? undefined}>
         {labels.runNowFailed}
         {request.note ? `: ${request.note}` : ""}
         {folders && ` · ${folders}`}
@@ -305,8 +310,8 @@ function RunRequestLine({
   const found = labels.runNowFound?.(request.processedCount ?? 0);
   if (!found) return null;
   return (
-    <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-      <CheckCircle2 className="size-3 shrink-0 text-emerald-600" />
+    <p className="mt-2.5 flex items-center gap-2 text-sm text-muted-foreground">
+      <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" />
       <span className="truncate" title={folders ?? undefined}>
         {found}
         {folders && ` · ${folders}`}
@@ -432,14 +437,13 @@ function SourceRow({
             onClick={press}
             title={labels.runNow}
           >
-            {busy ? (
+            {/* The line under the card says a run is going; the button only stops a second ask. */}
+            {asking ? (
               <Loader2 className="size-4 animate-spin" />
             ) : (
               <RefreshCw className="size-4" />
             )}
-            <span className="ml-1.5">
-              {busy ? (labels.runNowRunning ?? labels.runNow) : labels.runNow}
-            </span>
+            <span className="ml-1.5">{labels.runNow}</span>
           </Button>
         )}
         {source.fields.length > 0 || needsConnect ? (

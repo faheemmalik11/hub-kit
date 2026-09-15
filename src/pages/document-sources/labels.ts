@@ -28,6 +28,8 @@ export interface DocumentSourcesLabels {
   runNowFailed?: string;
   /** Which folders a run reads or read, shown under the card: "Reading Pleo, Archiv 2025". */
   runNowReadingFolders?: (names: string) => string;
+  /** What a run without picked folders reads; falls back to `runNowDialog.defaultRun`. */
+  runNowReadingUsual?: string;
   /** The dialog a channel with folders opens. Absent labels fall back to these English ones. */
   runNowDialog?: {
     title: (sourceName: string) => string;

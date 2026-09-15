@@ -13,11 +13,10 @@ export interface ProcessingSummary {
   errors: number;
   channels: { label: string; count: number }[];
   lastRunLabel: string | null;
-  /**
-   * What the pipeline is doing right now, already in the reader's words — "Processing now: Mailbox
-   * (folders: Pleo)". Absent or null when nothing is running, so the panel stays as it was.
-   */
+  /** The heading while the pipeline runs, "Processing now"; absent or null when nothing runs. */
   runningLabel?: string | null;
+  /** What each open run reads, one line each under the heading: "Email · The usual folders". */
+  runningLines?: string[];
 }
 
 export function ProcessingSummaryPanel({
@@ -80,12 +79,17 @@ export function ProcessingSummaryPanel({
       {summary?.runningLabel && (
         <div
           role="status"
-          className="mt-3 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs text-foreground"
+          className="mt-3 flex items-start gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-2 text-sm text-foreground"
         >
-          <Loader2 className="size-3.5 shrink-0 animate-spin" />
-          <span className="truncate" title={summary.runningLabel}>
-            {summary.runningLabel}
-          </span>
+          <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin" />
+          <div className="min-w-0">
+            <p className="font-medium">{summary.runningLabel}</p>
+            {summary.runningLines?.map((line) => (
+              <p key={line} className="truncate text-xs text-muted-foreground" title={line}>
+                {line}
+              </p>
+            ))}
+          </div>
         </div>
       )}
       <div className="mt-3 grid flex-1 grid-cols-2 gap-2">

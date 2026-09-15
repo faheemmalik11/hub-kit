@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode, RefAttributes } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { ArrowDown } from "lucide-react";
 
 import { cn } from "../lib/class-names";
@@ -17,12 +17,10 @@ export interface WorkflowLadderLinkProps {
  * It MUST forward its ref to the rendered anchor, so write the adapter with `forwardRef`. The
  * link is the tooltip's trigger, and Radix clones it to attach a ref of its own; a plain function
  * component drops that, costing the tooltip its anchor and logging "Function components cannot be
- * given refs". The ref is composed in here rather than declared on the props above, because React
- * 18 types `RefAttributes` with `LegacyRef` and the two do not unify.
+ * given refs". The ref stays out of this type: a project whose React types are a different copy
+ * from the kit's could not pass its `forwardRef` link into a type that names the kit's `Ref`.
  */
-export type WorkflowLadderLinkComponent = ComponentType<
-  WorkflowLadderLinkProps & RefAttributes<HTMLAnchorElement>
->;
+export type WorkflowLadderLinkComponent = ComponentType<WorkflowLadderLinkProps>;
 
 /**
  * What the circle does when someone points at it.

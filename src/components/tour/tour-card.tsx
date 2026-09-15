@@ -33,7 +33,7 @@ export function TourCard({ step, stepIndex, stepCount, labels, onNext, onSkip }:
       <style>{".tour-card-scroll::-webkit-scrollbar { display: none; }"}</style>
       <div
         className="tour-card-scroll mt-2 max-h-[max(8rem,min(70vh,calc(var(--radix-popover-content-available-height,70vh)-6rem)))] space-y-2 overflow-y-auto pr-3 pb-1"
-        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none", overscrollBehavior: "contain" }}
       >
         {step.content.map((block, index) => (
           <TourBlock key={index} block={block} />

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { Loader2 } from "lucide-react";
 
 import { DashboardPanel } from "./panel";
 import { StatTile } from "./stat-tile";
@@ -12,6 +13,11 @@ export interface ProcessingSummary {
   errors: number;
   channels: { label: string; count: number }[];
   lastRunLabel: string | null;
+  /**
+   * What the pipeline is doing right now, already in the reader's words — "Processing now: Mailbox
+   * (folders: Pleo)". Absent or null when nothing is running, so the panel stays as it was.
+   */
+  runningLabel?: string | null;
 }
 
 export function ProcessingSummaryPanel({
@@ -71,6 +77,17 @@ export function ProcessingSummaryPanel({
       className={className}
       dataTour={dataTour}
     >
+      {summary?.runningLabel && (
+        <div
+          role="status"
+          className="mt-3 flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs text-foreground"
+        >
+          <Loader2 className="size-3.5 shrink-0 animate-spin" />
+          <span className="truncate" title={summary.runningLabel}>
+            {summary.runningLabel}
+          </span>
+        </div>
+      )}
       <div className="mt-3 grid flex-1 grid-cols-2 gap-2">
         <StatTile to={seeAllTo} label={labels.processed} value={value(summary?.processed)} />
         <StatTile to={seeAllTo} label={labels.recognized} value={value(summary?.recognized)} />

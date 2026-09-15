@@ -26,6 +26,8 @@ export interface DocumentSourcesLabels {
   runNowRunning?: string;
   runNowFound?: (count: number) => string;
   runNowFailed?: string;
+  /** Which folders a run reads or read, shown under the card: "Reading Pleo, Archiv 2025". */
+  runNowReadingFolders?: (names: string) => string;
   /** The dialog a channel with folders opens. Absent labels fall back to these English ones. */
   runNowDialog?: {
     title: (sourceName: string) => string;
@@ -96,6 +98,7 @@ export const englishDocumentSourcesLabels: DocumentSourcesLabels = {
   runNowFound: (count: number) =>
     count === 1 ? "1 new document" : `${count} new documents`,
   runNowFailed: "Could not run",
+  runNowReadingFolders: (names) => `Folders: ${names}`,
   runNowDialog: {
     title: (sourceName) => `Run ${sourceName} now`,
     description: "Read new documents now instead of waiting for the next scheduled run.",

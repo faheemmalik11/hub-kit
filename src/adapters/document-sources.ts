@@ -60,6 +60,8 @@ export interface SourceRunRequest {
   note?: string | null;
   /** New documents this run found. Null until it has finished. */
   processedCount?: number | null;
+  /** The folders this run was asked to read, as the picker named them. Absent for the usual folders. */
+  folderNames?: string[] | null;
 }
 
 export interface DocumentSource {

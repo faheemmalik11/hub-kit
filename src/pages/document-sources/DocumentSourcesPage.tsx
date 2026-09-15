@@ -270,14 +270,23 @@ function RunRequestLine({
 }) {
   if (!request || request.status === "idle") return null;
 
+  // Which folders, when somebody picked them: "the usual folders" needs no saying.
+  const folders =
+    request.folderNames && request.folderNames.length > 0 && labels.runNowReadingFolders
+      ? labels.runNowReadingFolders(request.folderNames.join(", "))
+      : null;
+
   if (request.status === "pending" || request.status === "running") {
     const text =
       request.status === "running" ? labels.runNowRunning : labels.runNowAsked;
     if (!text) return null;
     return (
       <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Loader2 className="size-3 animate-spin" />
-        {text}
+        <Loader2 className="size-3 shrink-0 animate-spin" />
+        <span className="truncate" title={folders ?? undefined}>
+          {text}
+          {folders && ` · ${folders}`}
+        </span>
       </p>
     );
   }
@@ -288,6 +297,7 @@ function RunRequestLine({
       <p className="mt-1 text-xs text-destructive" title={request.note ?? undefined}>
         {labels.runNowFailed}
         {request.note ? `: ${request.note}` : ""}
+        {folders && ` · ${folders}`}
       </p>
     );
   }
@@ -296,8 +306,11 @@ function RunRequestLine({
   if (!found) return null;
   return (
     <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-      <CheckCircle2 className="size-3 text-emerald-600" />
-      {found}
+      <CheckCircle2 className="size-3 shrink-0 text-emerald-600" />
+      <span className="truncate" title={folders ?? undefined}>
+        {found}
+        {folders && ` · ${folders}`}
+      </span>
     </p>
   );
 }
@@ -424,7 +437,9 @@ function SourceRow({
             ) : (
               <RefreshCw className="size-4" />
             )}
-            <span className="ml-1.5">{labels.runNow}</span>
+            <span className="ml-1.5">
+              {busy ? (labels.runNowRunning ?? labels.runNow) : labels.runNow}
+            </span>
           </Button>
         )}
         {source.fields.length > 0 || needsConnect ? (

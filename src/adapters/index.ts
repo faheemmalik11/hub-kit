@@ -122,6 +122,7 @@ export type {
   SourceKind,
   SourceRun,
   SourceRunRequest,
+  RunNowFolder,
   SourceStatus,
   RunRequestStatus,
 } from "./document-sources";

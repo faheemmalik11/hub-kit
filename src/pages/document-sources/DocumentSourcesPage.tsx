@@ -14,6 +14,7 @@ import {
 import type {
   DocumentSource,
   DocumentSourcesAdapter,
+  RunNowFolder,
   SourceRunRequest,
 } from "../../adapters/document-sources";
 import { Button } from "../../ui/button";
@@ -21,6 +22,7 @@ import { ErrorState } from "../../components/feedback/query-states";
 import { Skeleton } from "../../ui/skeleton";
 import { cn } from "../../lib/class-names";
 import { SourceIconBadge, StatusChip } from "./source-visuals";
+import { RunNowDialog } from "./RunNowDialog";
 import { SourceSettingsSheet } from "./SourceSettingsSheet";
 import {
   englishDocumentSourcesLabels,
@@ -197,7 +199,7 @@ export function DocumentSourcesPage({
               }
               onAskForARun={
                 adapter.askForARun
-                  ? () => adapter.askForARun?.(source.id) ?? Promise.resolve()
+                  ? (folders) => adapter.askForARun?.(source.id, folders) ?? Promise.resolve()
                   : undefined
               }
             />
@@ -313,7 +315,7 @@ function SourceRow({
   LinkComponent: DocumentSourcesRouter["Link"];
   onOpen: () => void;
   onConnect?: () => void;
-  onAskForARun?: () => Promise<void>;
+  onAskForARun?: (folders?: RunNowFolder[]) => Promise<void>;
 }) {
   const selectedItems = source.selectedItems ?? [];
   const hasSelectedItems = selectedItems.length > 0;
@@ -332,13 +334,21 @@ function SourceRow({
     source.status === "connected" &&
     !source.asksForItself;
 
-  async function ask() {
+  // A channel with folders asks what to read; one without runs as its schedule would.
+  const [choosing, setChoosing] = useState(false);
+
+  async function ask(folders?: RunNowFolder[]) {
     setAsking(true);
     try {
-      await onAskForARun?.();
+      await onAskForARun?.(folders);
     } finally {
       setAsking(false);
     }
+  }
+
+  function press() {
+    if (source.runNowFolders) setChoosing(true);
+    else void ask();
   }
   const actionLabel = needsConnect
     ? labels.connect
@@ -390,13 +400,23 @@ function SourceRow({
         <RunRequestLine request={source.runRequest} labels={labels} />
       </div>
       <div className="flex shrink-0 items-center justify-end gap-2">
+        {canRunNow && source.runNowFolders && (
+          <RunNowDialog
+            open={choosing}
+            onOpenChange={setChoosing}
+            sourceName={source.name}
+            folderField={source.runNowFolders}
+            labels={labels}
+            onStart={(folders) => ask(folders ?? undefined)}
+          />
+        )}
         {canRunNow && (
           <Button
             type="button"
             variant="ghost"
             size="sm"
             disabled={busy}
-            onClick={ask}
+            onClick={press}
             title={labels.runNow}
           >
             {busy ? (

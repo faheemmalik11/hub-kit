@@ -45,6 +45,12 @@ export interface SourceActor {
   role?: string;
 }
 
+/** One folder somebody picked for a single run: the provider's id, and what the picker called it. */
+export interface RunNowFolder {
+  id: string;
+  name: string;
+}
+
 /** Where a "run now" has got to. Mirrors pipeline_run_requests.status, plus `idle` for "never asked". */
 export type RunRequestStatus = "idle" | "pending" | "running" | "done" | "failed";
 
@@ -80,6 +86,12 @@ export interface DocumentSource {
    * reports itself; only the thing to press is gone.
    */
   asksForItself?: boolean;
+  /**
+   * The folders this channel can be pointed at for one run, as the settings sheet already lists
+   * them. Present means "Run now" opens a dialog offering the channel's own folders or a chosen
+   * set; absent means the button simply runs the channel as its schedule would.
+   */
+  runNowFolders?: SourceField;
   fields: SourceField[];
 }
 
@@ -118,5 +130,5 @@ export interface DocumentSourcesAdapter {
    * the hub keeps live — so a run somebody else started shows here too. Leave it out and no
    * button is rendered.
    */
-  askForARun?(sourceId: string): Promise<void>;
+  askForARun?(sourceId: string, folders?: RunNowFolder[]): Promise<void>;
 }

@@ -567,7 +567,8 @@ function StepShell({
   );
 }
 
-function FieldControl({
+/** One field's control, exported so a run-now dialog offers exactly the picker the sheet does. */
+export function FieldControl({
   field,
   value,
   onChange,

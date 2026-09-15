@@ -26,6 +26,19 @@ export interface DocumentSourcesLabels {
   runNowRunning?: string;
   runNowFound?: (count: number) => string;
   runNowFailed?: string;
+  /** The dialog a channel with folders opens. Absent labels fall back to these English ones. */
+  runNowDialog?: {
+    title: (sourceName: string) => string;
+    description: string;
+    defaultRun: string;
+    defaultRunHint: string;
+    chosenFolders: string;
+    chosenFoldersHint: string;
+    limits: string;
+    cancel: string;
+    start: string;
+    starting: string;
+  };
   footerTitle: string;
   footerDetail: string;
   nextRun?: string;
@@ -83,6 +96,19 @@ export const englishDocumentSourcesLabels: DocumentSourcesLabels = {
   runNowFound: (count: number) =>
     count === 1 ? "1 new document" : `${count} new documents`,
   runNowFailed: "Could not run",
+  runNowDialog: {
+    title: (sourceName) => `Run ${sourceName} now`,
+    description: "Read new documents now instead of waiting for the next scheduled run.",
+    defaultRun: "The usual folders",
+    defaultRunHint: "Exactly what the scheduled run reads.",
+    chosenFolders: "Specific folders",
+    chosenFoldersHint: "Look for documents that were never imported, for example in an archive.",
+    limits:
+      "Documents already imported are skipped. The client's start date and run limit apply to this run as a whole.",
+    cancel: "Cancel",
+    start: "Run now",
+    starting: "Asking…",
+  },
   footerTitle: "Configurations are used by the filing service",
   footerDetail:
     "Changes you make here are applied the next time documents are processed.",

@@ -72,6 +72,14 @@ export interface DocumentSource {
   runs?: SourceRun[];
   /** Live state of a run somebody asked for. Absent where the hub has not wired `askForARun`. */
   runRequest?: SourceRunRequest;
+  /**
+   * This source starts its own run the moment documents arrive, so it carries no button.
+   *
+   * Upload is the case: putting a file in IS the request, and a button beside it would only
+   * offer to do again what already happened. What a run FOUND still shows, so the card still
+   * reports itself; only the thing to press is gone.
+   */
+  asksForItself?: boolean;
   fields: SourceField[];
 }
 

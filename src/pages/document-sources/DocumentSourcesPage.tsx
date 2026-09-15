@@ -329,7 +329,8 @@ function SourceRow({
   const canRunNow =
     onAskForARun !== undefined &&
     labels.runNow !== undefined &&
-    source.status === "connected";
+    source.status === "connected" &&
+    !source.asksForItself;
 
   async function ask() {
     setAsking(true);

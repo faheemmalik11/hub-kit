@@ -415,6 +415,30 @@ function SourceRow({
             {source.statusDetail}
           </p>
         )}
+        {source.secondaryItems && source.secondaryItems.length > 0 && (
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+            {source.secondaryIcon && (
+              <SourceIconBadge
+                icon={source.secondaryIcon}
+                className="size-4 rounded bg-transparent"
+              />
+            )}
+            {source.secondaryItemsLabel && (
+              <span className="text-xs text-muted-foreground">
+                {source.secondaryItemsLabel}
+              </span>
+            )}
+            {source.secondaryItems.map((item) => (
+              <span
+                key={item}
+                title={item}
+                className="max-w-40 truncate rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-xs text-foreground"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        )}
         <RunRequestLine request={source.runRequest} labels={labels} />
       </div>
       <div className="flex shrink-0 items-center justify-end gap-2">

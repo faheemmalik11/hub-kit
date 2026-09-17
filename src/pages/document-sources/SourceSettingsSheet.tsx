@@ -15,6 +15,7 @@ import type {
   FieldOption,
   SourceField,
   SourceFieldValue,
+  SourceIcon,
 } from "../../adapters/document-sources";
 import { Button } from "../../ui/button";
 import {
@@ -475,7 +476,8 @@ function FieldRow({
   return (
     <StepShell stepNumber={stepNumber} isLastStep={isLastStep} dataFokus={field.key}>
       <div className="flex items-center justify-between gap-2">
-        <Label className="text-sm font-semibold text-foreground">
+        <Label className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+          {field.icon && <FieldGlyph icon={field.icon} />}
           {field.label}
         </Label>
         {hasOptions && onRefresh && (
@@ -497,12 +499,6 @@ function FieldRow({
           {field.description}
         </p>
       )}
-      {hasOptions && field.optionsError && (
-        <p className="mt-2 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
-          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
-          {labels.sheet.optionsFailed}
-        </p>
-      )}
       <div className="mt-2">
         <FieldControl
           field={field}
@@ -511,6 +507,20 @@ function FieldRow({
           labels={labels}
         />
       </div>
+      {/* Under the control it describes, as a line of text rather than a panel. A bordered box
+          above the field reads as a banner about the whole step, when what failed is only the list
+          of choices behind this one input. */}
+      {hasOptions && field.optionsError && (
+        <p className="mt-1.5 flex items-start gap-1.5 text-xs text-destructive">
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+          <span>
+            {labels.sheet.optionsFailed}
+            {typeof field.optionsError === "string" && (
+              <span className="mt-0.5 block break-words opacity-80">{field.optionsError}</span>
+            )}
+          </span>
+        </p>
+      )}
       {isMulti && selectedIds.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {selectedIds.map((id) => (
@@ -768,4 +778,13 @@ function labelFor(options: FieldOption[] | undefined, id: string): string | null
     }
   }
   return null;
+}
+
+/** The provider mark beside a field label. Small and inline: it identifies, it does not decorate. */
+function FieldGlyph({ icon }: { icon: SourceIcon }) {
+  if (typeof icon === "object" && "imageSrc" in icon) {
+    return <img src={icon.imageSrc} alt="" className="size-4 shrink-0 object-contain" />;
+  }
+  const Glyph = icon;
+  return <Glyph className="size-4 shrink-0" />;
 }

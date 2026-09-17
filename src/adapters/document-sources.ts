@@ -19,12 +19,27 @@ export type SourceFieldValue = string | string[] | boolean | null;
 export interface SourceField {
   key: string;
   kind: "select" | "multiSelect" | "treeSelect" | "toggle" | "text";
+  /**
+   * Whose folders this field picks from, when that is not the source's own provider.
+   *
+   * A mail channel files its copy into Drive. Without the mark beside the label, step 5 reads as
+   * another mailbox folder, which is the one thing it is not.
+   */
+  icon?: SourceIcon;
   label: string;
   description?: string;
   value: SourceFieldValue;
   options?: FieldOption[];
   optionsLoading?: boolean;
-  optionsError?: boolean;
+  /**
+   * Whether the list of choices failed to load, and why.
+   *
+   * A string is shown to the reader after the generic sentence. The cause matters here: "not
+   * signed in", "the key is not set" and "Google refused the sign-in" are three different jobs for
+   * three different people, and a single sentence covering all of them sends everyone to the wrong
+   * one.
+   */
+  optionsError?: boolean | string;
   placeholder?: string;
   advanced?: boolean;
   showInHeader?: boolean;
@@ -77,6 +92,17 @@ export interface DocumentSource {
   selectedItems?: string[];
   selectedItemsLabel?: string;
   selectedItemsLoading?: boolean;
+  /**
+   * A second chip row, for a card that answers two questions at once.
+   *
+   * A mail channel reads from some folders AND files a copy into another. Those are one setup, and
+   * splitting them into two cards invites reading the filing destination as a source documents
+   * arrive from.
+   */
+  secondaryItems?: string[];
+  secondaryItemsLabel?: string;
+  /** Whose folder the second row names, when it is not the card's own provider. */
+  secondaryIcon?: SourceIcon;
   runs?: SourceRun[];
   /** Live state of a run somebody asked for. Absent where the hub has not wired `askForARun`. */
   runRequest?: SourceRunRequest;

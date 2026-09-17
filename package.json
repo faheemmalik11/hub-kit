@@ -1,6 +1,6 @@
 {
   "name": "@hub-kit/core",
-  "version": "0.4.65",
+  "version": "0.4.66",
   "description": "Shared pages, components and theme system for all Hub projects.",
   "type": "module",
   "files": [
@@ -37,7 +37,8 @@
     "./bank-matching": "./dist/lib/bank-matching/index.js",
     "./notify-someone": "./dist/components/notify-someone/index.js",
     "./pages/document-sources": "./dist/pages/document-sources/index.js",
-    "./pages/document-sources/tanstack": "./dist/pages/document-sources/tanstack-router.js"
+    "./pages/document-sources/tanstack": "./dist/pages/document-sources/tanstack-router.js",
+    "./sepa": "./dist/lib/sepa/index.js"
   },
   "publishConfig": {
     "access": "public"
@@ -93,6 +94,7 @@
     "papaparse": "^5.7.0",
     "react-day-picker": "^9.14.0",
     "recharts": "^2.15.4",
+    "sepa": "^3.0.0",
     "tailwind-merge": "^3.3.0",
     "xlsx": "^0.18.5"
   },

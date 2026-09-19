@@ -429,10 +429,14 @@ function SourceRow({
               </span>
             )}
             {source.secondaryItems.map((item) => (
+              // The row wraps, so a filing destination gets the width it needs and only
+              // truncates once it outgrows the card. A folder name cut to "Antonius Apotheke
+              // Doc..." names nothing, and this row carries one chip where the row above carries
+              // many.
               <span
                 key={item}
                 title={item}
-                className="max-w-40 truncate rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-xs text-foreground"
+                className="max-w-full truncate rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-xs text-foreground"
               >
                 {item}
               </span>

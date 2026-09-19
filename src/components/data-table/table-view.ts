@@ -38,6 +38,14 @@ export function useTableView<Row>(
     initialDirection?: SortDirection;
     initialPageSize?: number;
     resetKey?: string;
+    /**
+     * How many rows match in total, when `rows` is already one page from a server.
+     *
+     * Given, the hook stops sorting and slicing: the caller has done both in its query, and
+     * doing it again here would reorder one page against itself and then cut it to a page of a
+     * page. Sort and page state still live here, so the same header and pager drive both modes.
+     */
+    totalRows?: number;
   },
 ): TableView<Row> {
   const {
@@ -46,7 +54,9 @@ export function useTableView<Row>(
     initialDirection = "asc",
     initialPageSize = 25,
     resetKey,
+    totalRows,
   } = options;
+  const servedByPage = totalRows !== undefined;
   const [sort, setSortState] = useState(initialSort);
   const [direction, setDirectionState] = useState<SortDirection>(initialDirection);
   const [page, setPage] = useState(1);
@@ -59,6 +69,7 @@ export function useTableView<Row>(
   }
 
   const sortedRows = useMemo(() => {
+    if (servedByPage) return rows;
     const copy = [...rows];
     copy.sort((first, second) => {
       const firstValue = sortValue(first, sort);
@@ -70,14 +81,16 @@ export function useTableView<Row>(
       return direction === "asc" ? comparison : -comparison;
     });
     return copy;
-  }, [rows, sort, direction, sortValue]);
+  }, [rows, sort, direction, sortValue, servedByPage]);
 
-  const total = sortedRows.length;
+  const total = servedByPage ? totalRows : sortedRows.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages);
   const from = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
   const to = Math.min(safePage * pageSize, total);
-  const pageRows = sortedRows.slice((safePage - 1) * pageSize, safePage * pageSize);
+  const pageRows = servedByPage
+    ? sortedRows
+    : sortedRows.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   function setSort(key: string) {
     setSortState(key);

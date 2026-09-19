@@ -3,6 +3,7 @@ import { SlidersHorizontal } from "lucide-react";
 
 import { cn } from "../../lib/class-names";
 import { Combobox } from "../../ui/combobox";
+import { Input } from "../../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../../ui/popover";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "../../ui/sheet";
 import { Switch } from "../../ui/switch";
@@ -88,6 +89,28 @@ function FilterFields({ fields }: { fields: FilterField[] }) {
               formatDay={field.formatDay}
               className="w-full"
             />
+          ) : field.kind === "numberRange" ? (
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                inputMode="decimal"
+                value={field.from}
+                onChange={(event) => field.onRangeChange(event.target.value, field.to)}
+                placeholder={field.fromPlaceholder}
+                aria-label={`${field.label} — ${field.fromPlaceholder ?? "from"}`}
+                className="w-full"
+              />
+              <span className="text-sm text-muted-foreground">–</span>
+              <Input
+                type="number"
+                inputMode="decimal"
+                value={field.to}
+                onChange={(event) => field.onRangeChange(field.from, event.target.value)}
+                placeholder={field.toPlaceholder}
+                aria-label={`${field.label} — ${field.toPlaceholder ?? "to"}`}
+                className="w-full"
+              />
+            </div>
           ) : (
             <div className="flex h-9 items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-sm">
               <span className="min-w-0">{field.label}</span>

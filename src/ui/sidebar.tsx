@@ -18,6 +18,10 @@ const SIDEBAR_WIDTH_DEFAULT = 256; // px, same as the old fixed "16rem"
 const SIDEBAR_WIDTH_MIN = 200; // px, narrow enough to still read every label
 const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
+// Below this the sidebar starts on its icon rail. A tablet in portrait is 768px: too wide for the
+// mobile sheet, too narrow to spend 256px of it on navigation, which left a five-column table
+// 512px and scrolling sideways. Only the starting state, so a toggle still wins.
+const SIDEBAR_RAIL_BELOW = 1024;
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 // The user's dragged width, independent of the cookie above that stores open/collapsed. Kept
 // separate on purpose: collapsing the sidebar must never lose or corrupt the expanded width the
@@ -98,6 +102,14 @@ const SidebarProvider = React.forwardRef<
 
     const [_open, _setOpen] = React.useState(defaultOpen);
     const open = openProp ?? _open;
+
+    React.useEffect(() => {
+      if (openProp === undefined && window.innerWidth < SIDEBAR_RAIL_BELOW) {
+        _setOpen(false);
+      }
+      // Mount only: this is the starting state, not a rule that fights the user on every resize.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
     const setOpen = React.useCallback(
       (value: boolean | ((value: boolean) => boolean)) => {
         const openState = typeof value === "function" ? value(open) : value;

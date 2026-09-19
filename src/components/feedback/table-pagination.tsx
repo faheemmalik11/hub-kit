@@ -1,6 +1,7 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "../../ui/button";
+import { cn } from "../../lib/class-names";
 import { Combobox } from "../../ui/combobox";
 
 export const PAGE_SIZES = [10, 25, 50, 100] as const;
@@ -31,6 +32,7 @@ export function TablePagination({
   onPage,
   onPageSize,
   labels = englishPaginationLabels,
+  divider = true,
 }: {
   page: number;
   totalPages: number;
@@ -41,9 +43,22 @@ export function TablePagination({
   onPage: (page: number) => void;
   onPageSize: (size: number) => void;
   labels?: PaginationLabels;
+  /**
+   * Draw the rule above the pager.
+   *
+   * On by default, because the pager usually sits inside the same bordered card as its table and
+   * is the line between them. A page that puts it BELOW that card wants it off: the card already
+   * ends in a border, and a second rule a few pixels under it reads as two separators.
+   */
+  divider?: boolean;
 }) {
   return (
-    <div className="mt-4 flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+    <div
+      className={cn(
+        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
+        divider && "mt-4 border-t border-border pt-4",
+      )}
+    >
       <div className="flex flex-wrap items-center gap-2 text-sm text-foreground">
         <span className="font-medium">{labels.perPage}</span>
         <Combobox

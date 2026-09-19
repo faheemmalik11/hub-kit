@@ -37,6 +37,24 @@ export type FilterField =
       formatDay: (isoDay: string) => string;
     }
   | {
+      /**
+       * Two bounds, either of which may be left empty. `value` is the pair serialised as
+       * "from|to" so the shared active/clear logic, which compares one string against one
+       * default, keeps working without a special case for every consumer.
+       */
+      kind: "numberRange";
+      key: string;
+      label: string;
+      value: string;
+      defaultValue: string;
+      from: string;
+      to: string;
+      onRangeChange: (from: string, to: string) => void;
+      fromPlaceholder?: string;
+      toPlaceholder?: string;
+      formatValue?: (value: string) => string;
+    }
+  | {
       kind: "toggle";
       key: string;
       label: string;
@@ -59,6 +77,8 @@ export function clearFilters(fields: FilterField[]): void {
     } else if (field.kind === "dateRange") {
       field.onChange(field.defaultValue);
       field.onRangeApply("", "");
+    } else if (field.kind === "numberRange") {
+      field.onRangeChange("", "");
     } else {
       field.onChange(field.defaultValue);
     }
@@ -96,6 +116,22 @@ export function activeFilters(fields: FilterField[]): ActiveFilter[] {
           field.onChange(field.defaultValue);
           field.onRangeApply("", "");
         },
+      });
+      continue;
+    }
+
+    if (field.kind === "numberRange") {
+      const show = field.formatValue ?? ((one: string) => one);
+      active.push({
+        key: field.key,
+        label: field.label,
+        // One bound on its own still reads as a range, so it is shown as one open at that end.
+        valueLabel: field.from && field.to
+          ? `${show(field.from)} – ${show(field.to)}`
+          : field.from
+            ? `≥ ${show(field.from)}`
+            : `≤ ${show(field.to)}`,
+        clear: () => field.onRangeChange("", ""),
       });
       continue;
     }

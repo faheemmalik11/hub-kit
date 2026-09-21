@@ -25,6 +25,8 @@ export interface TreePickerProps {
   placeholder: string;
   searchPlaceholder?: string;
   emptyText?: string;
+  /** The row that clears a single selection, offered at the top of the list. */
+  noneText?: string;
   selectedCountText?: (count: number) => string;
   disabled?: boolean;
   className?: string;
@@ -38,6 +40,7 @@ export function TreePicker({
   placeholder,
   searchPlaceholder,
   emptyText,
+  noneText,
   selectedCountText = (count) => `${count} selected`,
   disabled,
   className,
@@ -142,6 +145,20 @@ export function TreePicker({
           />
         </div>
         <div className="max-h-72 overflow-y-auto p-1">
+          {/* Always offered, not only once something is picked: "no folder" is a choice somebody
+              can see and take, rather than a state reached by clicking the chosen row again. */}
+          {!multi && noneText && (
+            <button
+              type="button"
+              onClick={() => {
+                onChange([]);
+                setOpen(false);
+              }}
+              className="mb-0.5 w-full cursor-pointer rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground hover:bg-accent"
+            >
+              {noneText}
+            </button>
+          )}
           {visibleRows.length === 0 && (
             <p className="px-3 py-2 text-sm text-muted-foreground">
               {emptyText ?? "No match found."}

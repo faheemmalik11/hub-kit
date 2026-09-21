@@ -672,6 +672,7 @@ export function FieldControl({
           multi={false}
           placeholder={placeholder}
           disabled={field.optionsLoading}
+          noneText={noneLabel}
           {...pickerText}
         />
       );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type {
   FieldOption,
@@ -47,6 +47,7 @@ export function RunNowDialog({
   sourceName,
   folderField,
   labels,
+  onLoadFolders,
   onStart,
 }: {
   open: boolean;
@@ -54,6 +55,8 @@ export function RunNowDialog({
   sourceName: string;
   folderField: SourceField;
   labels: DocumentSourcesLabels;
+  /** Fetches the folders to choose from, for a source whose list is only loaded when asked for. */
+  onLoadFolders?: () => Promise<FieldOption[]>;
   /** Null for the usual folders; otherwise the folders picked, with the names they were shown as. */
   onStart: (folders: RunNowFolder[] | null) => Promise<void>;
 }) {
@@ -67,6 +70,7 @@ export function RunNowDialog({
             sourceName={sourceName}
             folderField={folderField}
             labels={labels}
+            onLoadFolders={onLoadFolders}
             starting={starting}
             onCancel={() => onOpenChange(false)}
             onStart={async (folders) => {
@@ -89,6 +93,7 @@ function RunNowBody({
   sourceName,
   folderField,
   labels,
+  onLoadFolders,
   starting,
   onCancel,
   onStart,
@@ -96,6 +101,7 @@ function RunNowBody({
   sourceName: string;
   folderField: SourceField;
   labels: DocumentSourcesLabels;
+  onLoadFolders?: () => Promise<FieldOption[]>;
   starting: boolean;
   onCancel: () => void;
   onStart: (folders: RunNowFolder[] | null) => Promise<void>;
@@ -104,11 +110,27 @@ function RunNowBody({
   // Fresh on every mount, which is every open: see RunNowDialog.
   const [mode, setMode] = useState<Mode>("default");
   const [picked, setPicked] = useState<string[]>([]);
+  // The sheet loads a folder list when it opens; this dialog is reached from the row without it,
+  // so the picker used to offer nothing at all. Asked for once, the first time somebody chooses
+  // to pick folders, because most runs are the usual ones and never need the list.
+  const [fetched, setFetched] = useState<FieldOption[] | undefined>(folderField.options);
+  const [loading, setLoading] = useState(false);
+  const asked = useRef(false);
+
+  useEffect(() => {
+    if (mode !== "folders" || asked.current || fetched?.length || !onLoadFolders) return;
+    asked.current = true;
+    setLoading(true);
+    onLoadFolders()
+      .then(setFetched)
+      .catch(() => setFetched([]))
+      .finally(() => setLoading(false));
+  }, [mode, fetched, onLoadFolders]);
 
   const nothingPicked = mode === "folders" && picked.length === 0;
 
   function start() {
-    const names = namesById(folderField.options);
+    const names = namesById(fetched);
     void onStart(
       mode === "folders" ? picked.map((id) => ({ id, name: names.get(id) ?? id })) : null,
     );
@@ -152,7 +174,13 @@ function RunNowBody({
         <FieldControl
           // Always many: one run may read several archive folders at once. Starts empty, never
           // from the channel's configured folders: this set is only what was picked for this run.
-          field={{ ...folderField, kind: "multiSelect", value: [] }}
+          field={{
+            ...folderField,
+            kind: "multiSelect",
+            value: [],
+            options: fetched ?? [],
+            optionsLoading: loading,
+          }}
           value={picked}
           onChange={(next) => setPicked(Array.isArray(next) ? next : next ? [String(next)] : [])}
           labels={labels}

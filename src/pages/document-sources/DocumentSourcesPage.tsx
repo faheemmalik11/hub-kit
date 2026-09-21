@@ -14,7 +14,9 @@ import {
 import type {
   DocumentSource,
   DocumentSourcesAdapter,
+  FieldOption,
   RunNowFolder,
+  SourceField,
   SourceRunRequest,
 } from "../../adapters/document-sources";
 import { Button } from "../../ui/button";
@@ -202,6 +204,16 @@ export function DocumentSourcesPage({
                   ? (folders) => adapter.askForARun?.(source.id, folders) ?? Promise.resolve()
                   : undefined
               }
+              onLoadRunNowFolders={
+                adapter.loadFieldOptions && source.runNowFolders
+                  ? () =>
+                      adapter.loadFieldOptions!(
+                        source.id,
+                        source.runNowFolders!.key,
+                        dependsOnValue(source, source.runNowFolders!),
+                      )
+                  : undefined
+              }
             />
           ))}
         </div>
@@ -320,6 +332,13 @@ function RunRequestLine({
   );
 }
 
+/** What a field says it depends on, as the source currently answers it. */
+function dependsOnValue(source: DocumentSource, field: SourceField): string {
+  if (!field.dependsOn) return "";
+  const named = source.fields.find((one) => one.key === field.dependsOn)?.value;
+  return typeof named === "string" ? named : "";
+}
+
 function SourceRow({
   source,
   labels,
@@ -327,6 +346,7 @@ function SourceRow({
   onOpen,
   onConnect,
   onAskForARun,
+  onLoadRunNowFolders,
 }: {
   source: DocumentSource;
   labels: DocumentSourcesLabels;
@@ -334,6 +354,8 @@ function SourceRow({
   onOpen: () => void;
   onConnect?: () => void;
   onAskForARun?: (folders?: RunNowFolder[]) => Promise<void>;
+  /** The folders this source could be pointed at, fetched when somebody asks to choose some. */
+  onLoadRunNowFolders?: () => Promise<FieldOption[]>;
 }) {
   const selectedItems = source.selectedItems ?? [];
   const hasSelectedItems = selectedItems.length > 0;
@@ -453,6 +475,7 @@ function SourceRow({
             sourceName={source.name}
             folderField={source.runNowFolders}
             labels={labels}
+            onLoadFolders={onLoadRunNowFolders}
             onStart={(folders) => ask(folders ?? undefined)}
           />
         )}

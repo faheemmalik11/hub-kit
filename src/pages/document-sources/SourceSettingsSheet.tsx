@@ -147,7 +147,10 @@ function SheetBody({
 
   const dependentFields = source.fields.filter((field) => field.dependsOn);
   const [dynamicOptions, setDynamicOptions] = useState<
-    Record<string, { loading: boolean; error?: boolean; options: FieldOption[] }>
+    Record<
+      string,
+      { loading: boolean; error?: boolean; options: FieldOption[] }
+    >
   >({});
   const loadedDependency = useRef<Record<string, string | null>>({});
   const dependencyValuesKey = dependentFields
@@ -162,7 +165,8 @@ function SheetBody({
     }
     for (const field of dependentFields) {
       const raw = values[field.dependsOn as string];
-      const dependency = typeof raw === "string" && raw.trim() !== "" ? raw.trim() : null;
+      const dependency =
+        typeof raw === "string" && raw.trim() !== "" ? raw.trim() : null;
       const seenBefore = field.key in loadedDependency.current;
       if (seenBefore && loadedDependency.current[field.key] === dependency) {
         continue;
@@ -180,7 +184,10 @@ function SheetBody({
       }
       setDynamicOptions((current) => ({
         ...current,
-        [field.key]: { loading: true, options: current[field.key]?.options ?? [] },
+        [field.key]: {
+          loading: true,
+          options: current[field.key]?.options ?? [],
+        },
       }));
       onLoadFieldOptions(source.id, field.key, dependency).then(
         (options) => {
@@ -455,7 +462,11 @@ function FieldRow({
 
   if (field.kind === "toggle") {
     return (
-      <StepShell stepNumber={stepNumber} isLastStep={isLastStep} dataFokus={field.key}>
+      <StepShell
+        stepNumber={stepNumber}
+        isLastStep={isLastStep}
+        dataFokus={field.key}
+      >
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <Label className="text-sm font-semibold text-foreground">
@@ -474,7 +485,11 @@ function FieldRow({
   }
 
   return (
-    <StepShell stepNumber={stepNumber} isLastStep={isLastStep} dataFokus={field.key}>
+    <StepShell
+      stepNumber={stepNumber}
+      isLastStep={isLastStep}
+      dataFokus={field.key}
+    >
       <div className="flex items-center justify-between gap-2">
         <Label className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
           {field.icon && <FieldGlyph icon={field.icon} />}
@@ -516,7 +531,9 @@ function FieldRow({
           <span>
             {labels.sheet.optionsFailed}
             {typeof field.optionsError === "string" && (
-              <span className="mt-0.5 block break-words opacity-80">{field.optionsError}</span>
+              <span className="mt-0.5 block break-words opacity-80">
+                {field.optionsError}
+              </span>
             )}
           </span>
         </p>
@@ -528,8 +545,21 @@ function FieldRow({
               key={id}
               className="inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs text-foreground"
             >
-              <span className="max-w-44 truncate" title={chipLabel(field.options, id, labels)}>
-                {chipLabel(field.options, id, labels)}
+              <span
+                className="max-w-56 truncate"
+                title={chipLabel(field.options, id, labels)}
+                // A PATH is identified by its END: "03 Finanzen/30 Stäy GmbH/01 Buchhaltung"
+                // truncated the usual way keeps the part every sibling shares and drops the only
+                // part that tells them apart. Reversing the direction moves the ellipsis to the
+                // front; the text itself is isolated so it still reads left to right. Only for a
+                // host that set `chipLabel`, so an ordinary label still truncates as before.
+                style={
+                  isPathChip(field.options, id)
+                    ? { direction: "rtl", textAlign: "left" }
+                    : undefined
+                }
+              >
+                <bdi>{chipLabel(field.options, id, labels)}</bdi>
               </span>
               <button
                 type="button"
@@ -645,6 +675,7 @@ export function FieldControl({
             multi
             placeholder={placeholder}
             disabled={field.optionsLoading}
+            onExpand={field.onExpandOption}
             {...pickerText}
           />
         );
@@ -673,6 +704,7 @@ export function FieldControl({
           placeholder={placeholder}
           disabled={field.optionsLoading}
           noneText={noneLabel}
+          onExpand={field.onExpandOption}
           {...pickerText}
         />
       );
@@ -768,10 +800,28 @@ function chipLabel(
   return labels.sheet.unknownValue ? labels.sheet.unknownValue(shortId) : id;
 }
 
-function labelFor(options: FieldOption[] | undefined, id: string): string | null {
+/** Whether this chip shows a path, and so should keep its END rather than its beginning. */
+function isPathChip(options: FieldOption[] | undefined, id: string): boolean {
   for (const option of options ?? []) {
     if (option.value === id) {
-      return option.label;
+      return typeof option.chipLabel === "string";
+    }
+    if (isPathChip(option.children, id)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function labelFor(
+  options: FieldOption[] | undefined,
+  id: string,
+): string | null {
+  for (const option of options ?? []) {
+    if (option.value === id) {
+      // The whole path where the host set one: a chip carries no nesting of its own, so four
+      // folders called "Buchhaltung" under four parents all read the same without it.
+      return option.chipLabel ?? option.label;
     }
     const nested = labelFor(option.children, id);
     if (nested !== null) {
@@ -784,7 +834,13 @@ function labelFor(options: FieldOption[] | undefined, id: string): string | null
 /** The provider mark beside a field label. Small and inline: it identifies, it does not decorate. */
 function FieldGlyph({ icon }: { icon: SourceIcon }) {
   if (typeof icon === "object" && "imageSrc" in icon) {
-    return <img src={icon.imageSrc} alt="" className="size-4 shrink-0 object-contain" />;
+    return (
+      <img
+        src={icon.imageSrc}
+        alt=""
+        className="size-4 shrink-0 object-contain"
+      />
+    );
   }
   const Glyph = icon;
   return <Glyph className="size-4 shrink-0" />;

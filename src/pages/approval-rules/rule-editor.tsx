@@ -205,7 +205,9 @@ export function RuleEditor({
                           },
                         ]
                       : []),
-                    ...approverOptions,
+                    ...approverOptions.filter(
+                      (option) => option.value === value || !chosen.includes(option.value),
+                    ),
                   ]}
                 />
               </div>

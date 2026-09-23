@@ -15,6 +15,17 @@ export interface TreePickerNode {
   value: string;
   label: string;
   children?: TreePickerNode[];
+  /**
+   * Whether this node can be opened, when that is not the same as "children are already here".
+   *
+   * A tree read one level at a time knows a folder HAS children long before it has fetched them,
+   * and a folder with none must not offer a chevron that opens onto nothing. Left undefined the
+   * answer is the old one: a node opens when children are loaded, which is what every host that
+   * hands over a whole tree still means.
+   */
+  hasChildren?: boolean;
+  /** Children are on their way. Shows a quiet note under the row rather than an empty branch. */
+  loadingChildren?: boolean;
 }
 
 export interface TreePickerProps {
@@ -30,6 +41,16 @@ export interface TreePickerProps {
   selectedCountText?: (count: number) => string;
   disabled?: boolean;
   className?: string;
+  /**
+   * Called the first time a node is opened, for a host that fetches children on demand.
+   *
+   * Optional, and absent for every host that passes a finished tree: without it the picker behaves
+   * exactly as before. A host that supplies it is expected to answer by handing back `nodes` with
+   * that node's `children` filled in.
+   */
+  onExpand?: (value: string) => void;
+  /** Said under a branch whose children are still loading. */
+  loadingText?: string;
 }
 
 export function TreePicker({
@@ -44,6 +65,8 @@ export function TreePicker({
   selectedCountText = (count) => `${count} selected`,
   disabled,
   className,
+  onExpand,
+  loadingText,
 }: TreePickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -79,7 +102,17 @@ export function TreePicker({
     [nodes, expanded, searching, query],
   );
 
-  const toggleExpand = (value: string) => {
+  const toggleExpand = (row: TreeRow) => {
+    const { value } = row.node;
+    // Asked only on the way OPEN, and only while nothing is there yet: a branch already fetched
+    // must not be re-read every time somebody folds and unfolds it.
+    if (
+      !expanded.has(value) &&
+      onExpand &&
+      (row.node.children ?? []).length === 0
+    ) {
+      onExpand(value);
+    }
     setExpanded((current) => {
       const next = new Set(current);
       if (next.has(value)) {
@@ -166,59 +199,74 @@ export function TreePicker({
           )}
           {visibleRows.map((row) => {
             const isSelected = values.includes(row.node.value);
+            // An opened branch with nothing under it yet says so, rather than reading as a folder
+            // that turned out to be empty.
+            const waiting =
+              row.isExpanded &&
+              row.node.loadingChildren === true &&
+              (row.node.children ?? []).length === 0;
             return (
-              <div
-                key={row.node.value}
-                className="flex cursor-pointer items-center rounded-md text-sm hover:bg-accent"
-                onClick={() => toggleSelect(row.node.value)}
-              >
-                {row.depth > 0 && (
+              <div key={row.node.value}>
+                <div
+                  className="flex cursor-pointer items-center rounded-md text-sm hover:bg-accent"
+                  onClick={() => toggleSelect(row.node.value)}
+                >
+                  {row.depth > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="self-stretch shrink-0"
+                      style={{
+                        width: row.depth * 16,
+                        backgroundImage:
+                          "repeating-linear-gradient(to right, transparent 0, transparent 7px, var(--border) 7px, var(--border) 8px, transparent 8px, transparent 16px)",
+                      }}
+                    />
+                  )}
+                  {row.hasChildren && !searching ? (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toggleExpand(row);
+                      }}
+                      className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      {row.isExpanded ? (
+                        <ChevronDown className="size-4" />
+                      ) : (
+                        <ChevronRight className="size-4" />
+                      )}
+                    </button>
+                  ) : (
+                    <span className="size-6 shrink-0" />
+                  )}
                   <span
-                    aria-hidden="true"
-                    className="self-stretch shrink-0"
-                    style={{
-                      width: row.depth * 16,
-                      backgroundImage:
-                        "repeating-linear-gradient(to right, transparent 0, transparent 7px, var(--border) 7px, var(--border) 8px, transparent 8px, transparent 16px)",
-                    }}
-                  />
-                )}
-                {row.hasChildren && !searching ? (
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      toggleExpand(row.node.value);
-                    }}
-                    className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-                  >
-                    {row.isExpanded ? (
-                      <ChevronDown className="size-4" />
-                    ) : (
-                      <ChevronRight className="size-4" />
+                    className={cn(
+                      "mr-2 flex size-4 shrink-0 items-center justify-center rounded-[4px] border",
+                      isSelected
+                        ? "border-brand bg-brand text-primary-foreground"
+                        : "border-input bg-background",
                     )}
-                  </button>
-                ) : (
-                  <span className="size-6 shrink-0" />
+                  >
+                    {isSelected && <Check className="size-3" />}
+                  </span>
+                  <span
+                    className={cn(
+                      "min-w-0 flex-1 truncate py-1.5 pr-2",
+                      isSelected && "font-medium",
+                    )}
+                  >
+                    {row.node.label}
+                  </span>
+                </div>
+                {waiting && (
+                  <p
+                    className="py-1 text-sm text-muted-foreground"
+                    style={{ paddingLeft: (row.depth + 1) * 16 + 24 }}
+                  >
+                    {loadingText ?? "Loading …"}
+                  </p>
                 )}
-                <span
-                  className={cn(
-                    "mr-2 flex size-4 shrink-0 items-center justify-center rounded-[4px] border",
-                    isSelected
-                      ? "border-brand bg-brand text-primary-foreground"
-                      : "border-input bg-background",
-                  )}
-                >
-                  {isSelected && <Check className="size-3" />}
-                </span>
-                <span
-                  className={cn(
-                    "min-w-0 flex-1 truncate py-1.5 pr-2",
-                    isSelected && "font-medium",
-                  )}
-                >
-                  {row.node.label}
-                </span>
               </div>
             );
           })}
@@ -246,7 +294,9 @@ function treeRows(
     const row: TreeRow = {
       node,
       depth,
-      hasChildren: children.length > 0,
+      // `hasChildren` when the host said so, otherwise the old rule. A lazily read tree knows a
+      // folder opens before its children exist, and would otherwise show no chevron to open it.
+      hasChildren: node.hasChildren ?? children.length > 0,
       isExpanded,
     };
     return isExpanded

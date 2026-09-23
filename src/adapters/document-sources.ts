@@ -6,12 +6,32 @@ export type SourceKind = "mailbox" | "storage" | "upload" | "portal";
 
 export type SourceStatus = "connected" | "not_connected" | "not_configured";
 
-export type SourceIcon = ComponentType<{ className?: string }> | { imageSrc: string };
+export type SourceIcon =
+  ComponentType<{ className?: string }> | { imageSrc: string };
 
 export interface FieldOption {
   value: string;
   label: string;
   children?: FieldOption[];
+  /**
+   * Whether this option opens, when that is not the same as "its children are already here".
+   *
+   * For a tree the host reads one level at a time: a folder is known to HAVE children long before
+   * they are fetched. Left undefined the old rule applies, so a host handing over a whole tree is
+   * unaffected.
+   */
+  hasChildren?: boolean;
+  /** Its children are on their way, after `onExpandOption` was called for it. */
+  loadingChildren?: boolean;
+  /**
+   * What the chip says, when the tree's own label is too little on its own.
+   *
+   * A folder tree shows one segment per row, because the nesting already says where it sits. A
+   * chip has no nesting: four folders called "Buchhaltung" under four parents all read the same.
+   * Set this to the whole path and the chip disambiguates while the tree stays short. Left
+   * undefined the chip uses `label`, as it always has.
+   */
+  chipLabel?: string;
 }
 
 export type SourceFieldValue = string | string[] | boolean | null;
@@ -47,6 +67,15 @@ export interface SourceField {
   // the adapter's loadFieldOptions whenever that value changes, and clears this field's own
   // value because a choice made under the old dependency no longer means anything.
   dependsOn?: string;
+  /**
+   * Fetch one folder's children, the first time it is opened.
+   *
+   * For a store too large to read whole: Stäy's Dropbox answers 7.376 folders beside 60.708 files,
+   * which is minutes of waiting before the picker shows anything. A host that sets this returns
+   * the level it already has, marks what opens with `hasChildren`, and fills `children` in when
+   * this is called. Absent, the picker behaves as it always has and the host supplies the tree.
+   */
+  onExpandOption?: (value: string) => void;
 }
 
 export interface SourceRun {
@@ -67,7 +96,8 @@ export interface RunNowFolder {
 }
 
 /** Where a "run now" has got to. Mirrors pipeline_run_requests.status, plus `idle` for "never asked". */
-export type RunRequestStatus = "idle" | "pending" | "running" | "done" | "failed";
+export type RunRequestStatus =
+  "idle" | "pending" | "running" | "done" | "failed";
 
 export interface SourceRunRequest {
   status: RunRequestStatus;

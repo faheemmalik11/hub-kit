@@ -4,6 +4,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronsUpDown,
+  Loader2,
   Search,
 } from "lucide-react";
 
@@ -49,8 +50,10 @@ export interface TreePickerProps {
    * that node's `children` filled in.
    */
   onExpand?: (value: string) => void;
-  /** Said under a branch whose children are still loading. */
   loadingText?: string;
+  readsInside?: Record<string, boolean>;
+  onReadsInside?: (value: string, inside: boolean) => void;
+  readsInsideLabel?: string;
 }
 
 export function TreePicker({
@@ -66,7 +69,9 @@ export function TreePicker({
   disabled,
   className,
   onExpand,
-  loadingText,
+  readsInside,
+  onReadsInside,
+  readsInsideLabel,
 }: TreePickerProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -124,13 +129,22 @@ export function TreePicker({
     });
   };
 
+  const chosenInside = useMemo(
+    () => foldersHoldingAChoice(nodes, new Set(values)),
+    [nodes, values],
+  );
+
   const toggleSelect = (value: string) => {
     if (multi) {
+      const taking = !values.includes(value);
       onChange(
-        values.includes(value)
-          ? values.filter((id) => id !== value)
-          : [...values, value],
+        taking ? [...values, value] : values.filter((id) => id !== value),
       );
+      if (taking && onReadsInside) {
+        for (const above of chosenAbove(nodes, value)) {
+          if (readsInside?.[above]) onReadsInside(above, false);
+        }
+      }
       return;
     }
     onChange(values.includes(value) ? [] : [value]);
@@ -199,12 +213,6 @@ export function TreePicker({
           )}
           {visibleRows.map((row) => {
             const isSelected = values.includes(row.node.value);
-            // An opened branch with nothing under it yet says so, rather than reading as a folder
-            // that turned out to be empty.
-            const waiting =
-              row.isExpanded &&
-              row.node.loadingChildren === true &&
-              (row.node.children ?? []).length === 0;
             return (
               <div key={row.node.value}>
                 <div
@@ -231,7 +239,10 @@ export function TreePicker({
                       }}
                       className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
                     >
-                      {row.isExpanded ? (
+                      {row.node.loadingChildren === true &&
+                      (row.node.children ?? []).length === 0 ? (
+                        <Loader2 className="size-3.5 animate-spin" />
+                      ) : row.isExpanded ? (
                         <ChevronDown className="size-4" />
                       ) : (
                         <ChevronRight className="size-4" />
@@ -258,15 +269,27 @@ export function TreePicker({
                   >
                     {row.node.label}
                   </span>
+                  {isSelected && onReadsInside && !chosenInside.has(row.node.value) && (
+                    <label
+                      className="flex shrink-0 cursor-pointer items-center gap-2 pr-2 text-[0.6875rem] text-muted-foreground"
+                      onClick={(event) => event.stopPropagation()}
+                    >
+                      {readsInsideLabel ?? "Read sub-folders as well"}
+                      <input
+                        type="checkbox"
+                        className="peer sr-only"
+                        checked={Boolean(readsInside?.[row.node.value])}
+                        onChange={(event) =>
+                          onReadsInside(row.node.value, event.target.checked)
+                        }
+                      />
+                      <span className="relative h-4 w-7 rounded-full bg-foreground/25 transition-colors peer-checked:bg-brand peer-checked:[&>span]:translate-x-3">
+                        <span className="absolute left-0.5 top-0.5 size-3 rounded-full bg-background transition-transform" />
+                      </span>
+                    </label>
+                  )}
                 </div>
-                {waiting && (
-                  <p
-                    className="py-1 text-sm text-muted-foreground"
-                    style={{ paddingLeft: (row.depth + 1) * 16 + 24 }}
-                  >
-                    {loadingText ?? "Loading …"}
-                  </p>
-                )}
+
               </div>
             );
           })}
@@ -274,6 +297,40 @@ export function TreePicker({
       </PopoverContent>
     </Popover>
   );
+}
+
+function foldersHoldingAChoice(
+  nodes: TreePickerNode[],
+  chosen: Set<string>,
+): Set<string> {
+  const found = new Set<string>();
+  const walk = (node: TreePickerNode): boolean => {
+    let below = false;
+    for (const child of node.children ?? []) {
+      const deeper = walk(child);
+      if (chosen.has(child.value) || deeper) below = true;
+    }
+    if (below) found.add(node.value);
+    return below;
+  };
+  nodes.forEach(walk);
+  return found;
+}
+
+/** The chosen folders one folder sits inside. */
+function chosenAbove(nodes: TreePickerNode[], value: string): string[] {
+  const found: string[] = [];
+  const walk = (node: TreePickerNode, above: string[]): boolean => {
+    if (node.value === value) {
+      found.push(...above);
+      return true;
+    }
+    return (node.children ?? []).some((child) =>
+      walk(child, [...above, node.value]),
+    );
+  };
+  nodes.forEach((node) => walk(node, []));
+  return found;
 }
 
 interface TreeRow {

@@ -426,7 +426,7 @@ function SourceRow({
                   <span
                     key={item}
                     title={item}
-                    className="max-w-40 truncate rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-xs text-foreground"
+                    className="rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-xs break-all text-foreground"
                   >
                     {item}
                   </span>

@@ -1,4 +1,6 @@
 export { cn } from "./class-names";
+export { useFolderTree } from "./folder-tree";
+export type { FolderTree, FolderLevelItem } from "./folder-tree";
 export type { QueryResult, MutationResult } from "./query-result";
 export type { Formatters } from "./formatters";
 export { englishFormatters } from "./formatters";

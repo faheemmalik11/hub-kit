@@ -546,18 +546,8 @@ function FieldRow({
               className="inline-flex max-w-full items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs text-foreground"
             >
               <span
-                className="max-w-56 truncate"
+                className="break-all"
                 title={chipLabel(field.options, id, labels)}
-                // A PATH is identified by its END: "03 Finanzen/30 Stäy GmbH/01 Buchhaltung"
-                // truncated the usual way keeps the part every sibling shares and drops the only
-                // part that tells them apart. Reversing the direction moves the ellipsis to the
-                // front; the text itself is isolated so it still reads left to right. Only for a
-                // host that set `chipLabel`, so an ordinary label still truncates as before.
-                style={
-                  isPathChip(field.options, id)
-                    ? { direction: "rtl", textAlign: "left" }
-                    : undefined
-                }
               >
                 <bdi>{chipLabel(field.options, id, labels)}</bdi>
               </span>
@@ -676,6 +666,9 @@ export function FieldControl({
             placeholder={placeholder}
             disabled={field.optionsLoading}
             onExpand={field.onExpandOption}
+            readsInside={field.readsInside}
+            onReadsInside={field.onReadsInside}
+            readsInsideLabel={field.readsInsideLabel}
             {...pickerText}
           />
         );
@@ -800,18 +793,6 @@ function chipLabel(
   return labels.sheet.unknownValue ? labels.sheet.unknownValue(shortId) : id;
 }
 
-/** Whether this chip shows a path, and so should keep its END rather than its beginning. */
-function isPathChip(options: FieldOption[] | undefined, id: string): boolean {
-  for (const option of options ?? []) {
-    if (option.value === id) {
-      return typeof option.chipLabel === "string";
-    }
-    if (isPathChip(option.children, id)) {
-      return true;
-    }
-  }
-  return false;
-}
 
 function labelFor(
   options: FieldOption[] | undefined,

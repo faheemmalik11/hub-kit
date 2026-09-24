@@ -76,6 +76,9 @@ export interface SourceField {
    * this is called. Absent, the picker behaves as it always has and the host supplies the tree.
    */
   onExpandOption?: (value: string) => void;
+  readsInside?: Record<string, boolean>;
+  onReadsInside?: (value: string, inside: boolean) => void;
+  readsInsideLabel?: string;
 }
 
 export interface SourceRun {

@@ -145,3 +145,12 @@ export type {
   AssignmentRuleView,
   CategoryOption,
 } from "./assignment-rules";
+export type {
+  LexofficeCompany,
+  LexofficeConnection,
+  LexofficeConnectionAdapter,
+  LexofficeConnectionInput,
+  LexofficeConnectionStatusInput,
+  LexofficeSyncCounts,
+  LexofficeSyncRun,
+} from "./lexoffice";

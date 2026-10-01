@@ -1,6 +1,6 @@
 {
   "name": "@hub-kit/core",
-  "version": "0.4.70",
+  "version": "0.4.71",
   "description": "Shared pages, components and theme system for all Hub projects.",
   "type": "module",
   "files": [
@@ -38,7 +38,10 @@
     "./notify-someone": "./dist/components/notify-someone/index.js",
     "./pages/document-sources": "./dist/pages/document-sources/index.js",
     "./pages/document-sources/tanstack": "./dist/pages/document-sources/tanstack-router.js",
-    "./sepa": "./dist/lib/sepa/index.js"
+    "./sepa": "./dist/lib/sepa/index.js",
+    "./lexoffice": "./dist/lib/lexoffice/index.js",
+    "./lexoffice/ui": "./dist/components/lexoffice/index.js",
+    "./integrations": "./dist/components/integrations/index.js"
   },
   "publishConfig": {
     "access": "public"

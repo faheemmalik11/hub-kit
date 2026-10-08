@@ -121,7 +121,12 @@ export function TeamPage({ adapter, labels = englishTeamPageLabels }: TeamPagePr
                       <TableHead>{labels.columns.name}</TableHead>
                       <TableHead>{labels.columns.email}</TableHead>
                       <TableHead>{labels.columns.role}</TableHead>
-                      <TableHead>{labels.columns.companies}</TableHead>
+                      {/* A hub for a single business has no companies to scope anybody to, and
+                          its adapter answers with an empty list. Drawing the column anyway left a
+                          header over a badge that said "all" of nothing. */}
+                      {companies.length > 0 && (
+                        <TableHead>{labels.columns.companies}</TableHead>
+                      )}
                       <TableHead className="w-[130px] text-center">
                         {labels.columns.permissions}
                       </TableHead>
@@ -280,11 +285,13 @@ function EmployeeRow({
       <TableCell>
         <RoleBadge roleName={employee.roleName} labels={labels} />
       </TableCell>
-      <TableCell>
-        <div className="flex flex-wrap gap-1">
-          <CompanyBadges employee={employee} companies={companies} labels={labels} />
-        </div>
-      </TableCell>
+      {companies.length > 0 && (
+        <TableCell>
+          <div className="flex flex-wrap gap-1">
+            <CompanyBadges employee={employee} companies={companies} labels={labels} />
+          </div>
+        </TableCell>
+      )}
       <TableCell className="text-center text-sm text-muted-foreground">
         <PermissionCount employee={employee} adapter={adapter} labels={labels} />
       </TableCell>
@@ -341,7 +348,9 @@ function EmployeeCard({
 
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <RoleBadge roleName={employee.roleName} labels={labels} />
-        <CompanyBadges employee={employee} companies={companies} labels={labels} />
+        {companies.length > 0 && (
+          <CompanyBadges employee={employee} companies={companies} labels={labels} />
+        )}
       </div>
 
       <div className="mt-3 space-y-1.5 border-t border-border pt-3">

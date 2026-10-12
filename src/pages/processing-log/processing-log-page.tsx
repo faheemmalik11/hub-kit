@@ -370,6 +370,7 @@ function ProcessingTab({
               to={lastShown}
               onPage={setPage}
               onPageSize={setPageSize}
+              labels={labels.pagination}
             />
           )}
         </>
@@ -818,6 +819,7 @@ function ChangesTab({
               to={lastShown}
               onPage={setPage}
               onPageSize={setPageSize}
+              labels={labels.pagination}
             />
           )}
         </>

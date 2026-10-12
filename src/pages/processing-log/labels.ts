@@ -1,3 +1,8 @@
+import {
+  englishPaginationLabels,
+  type PaginationLabels,
+} from "../../components/feedback/table-pagination";
+
 export interface ProcessingLogLabels {
   title: string;
   processingTab: string;
@@ -39,6 +44,7 @@ export interface ProcessingLogLabels {
     tableName: string;
     changeText: string;
   };
+  pagination: PaginationLabels;
   detail: {
     title: string;
     subject: string;
@@ -94,6 +100,7 @@ export const englishProcessingLogLabels: ProcessingLogLabels = {
     tableName: "Table",
     changeText: "Text",
   },
+  pagination: englishPaginationLabels,
   detail: {
     title: "Log entry",
     subject: "Subject",

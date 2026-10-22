@@ -254,6 +254,14 @@ export function ShellRailMenu({
         <DropdownMenuLabel>{label}</DropdownMenuLabel>
         {flattenShellLinks(items).map((child) => {
           const childActive = child.to === "/" ? pathname === "/" : pathname.startsWith(child.to);
+          if (child.disabled) {
+            return (
+              <DropdownMenuItem key={child.key} disabled>
+                <child.icon className="size-4" />
+                {child.label}
+              </DropdownMenuItem>
+            );
+          }
           return (
             <DropdownMenuItem key={child.key} asChild>
               <Link
@@ -411,18 +419,25 @@ export function ShellNavMenu({
           const active = isActive(item.to);
           return (
             <SidebarMenuItem key={item.key} data-tour={item.tourId}>
-              <SidebarMenuButton asChild isActive={active}>
-                <Link
-                  to={item.to}
-                  aria-current={active ? "page" : undefined}
-                  onClick={closeOnMobile}
-                >
+              {item.disabled ? (
+                <SidebarMenuButton disabled aria-disabled="true">
                   <item.icon />
-                  <HintTooltip label={item.label}>
-                    <span className="truncate">{item.label}</span>
-                  </HintTooltip>
-                </Link>
-              </SidebarMenuButton>
+                  <span className="truncate">{item.label}</span>
+                </SidebarMenuButton>
+              ) : (
+                <SidebarMenuButton asChild isActive={active}>
+                  <Link
+                    to={item.to}
+                    aria-current={active ? "page" : undefined}
+                    onClick={closeOnMobile}
+                  >
+                    <item.icon />
+                    <HintTooltip label={item.label}>
+                      <span className="truncate">{item.label}</span>
+                    </HintTooltip>
+                  </Link>
+                </SidebarMenuButton>
+              )}
               {showBadge && <ShellBadgePill badge={badge} />}
             </SidebarMenuItem>
           );
@@ -547,18 +562,25 @@ function ShellNavGroupItem({
                 />
               ) : (
                 <SidebarMenuSubItem key={child.key} data-tour={child.tourId}>
-                  <SidebarMenuSubButton asChild isActive={isActive(child.to)}>
-                    <Link
-                      to={child.to}
-                      aria-current={isActive(child.to) ? "page" : undefined}
-                      onClick={closeOnMobile}
-                    >
+                  {child.disabled ? (
+                    <SidebarMenuSubButton aria-disabled="true">
                       <child.icon className="size-4" />
-                      <HintTooltip label={child.label}>
-                        <span className="truncate">{child.label}</span>
-                      </HintTooltip>
-                    </Link>
-                  </SidebarMenuSubButton>
+                      <span className="truncate">{child.label}</span>
+                    </SidebarMenuSubButton>
+                  ) : (
+                    <SidebarMenuSubButton asChild isActive={isActive(child.to)}>
+                      <Link
+                        to={child.to}
+                        aria-current={isActive(child.to) ? "page" : undefined}
+                        onClick={closeOnMobile}
+                      >
+                        <child.icon className="size-4" />
+                        <HintTooltip label={child.label}>
+                          <span className="truncate">{child.label}</span>
+                        </HintTooltip>
+                      </Link>
+                    </SidebarMenuSubButton>
+                  )}
                 </SidebarMenuSubItem>
               ),
             )}
@@ -606,18 +628,25 @@ function ShellNavSubGroup({
           <SidebarMenuSub className="mr-0 translate-x-px pr-0">
             {flattenShellLinks(item.items).map((child) => (
               <SidebarMenuSubItem key={child.key}>
-                <SidebarMenuSubButton asChild isActive={isActive(child.to)}>
-                  <Link
-                    to={child.to}
-                    aria-current={isActive(child.to) ? "page" : undefined}
-                    onClick={closeOnMobile}
-                  >
+                {child.disabled ? (
+                  <SidebarMenuSubButton aria-disabled="true">
                     <child.icon className="size-4" />
-                    <HintTooltip label={child.label}>
-                      <span className="truncate">{child.label}</span>
-                    </HintTooltip>
-                  </Link>
-                </SidebarMenuSubButton>
+                    <span className="truncate">{child.label}</span>
+                  </SidebarMenuSubButton>
+                ) : (
+                  <SidebarMenuSubButton asChild isActive={isActive(child.to)}>
+                    <Link
+                      to={child.to}
+                      aria-current={isActive(child.to) ? "page" : undefined}
+                      onClick={closeOnMobile}
+                    >
+                      <child.icon className="size-4" />
+                      <HintTooltip label={child.label}>
+                        <span className="truncate">{child.label}</span>
+                      </HintTooltip>
+                    </Link>
+                  </SidebarMenuSubButton>
+                )}
               </SidebarMenuSubItem>
             ))}
           </SidebarMenuSub>

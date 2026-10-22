@@ -8,6 +8,7 @@ export { downloadTextFile, toCsv } from "./download";
 export * from "./bank-import";
 export * from "./bank-matching";
 export * from "./opos-whitelist";
+export * from "./onboarding";
 export {
   createPlaceholderOverviewAdapter,
   englishPlaceholderOverviewLabels,

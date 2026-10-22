@@ -7,6 +7,7 @@ import { cn } from "../lib/class-names";
 import { Button } from "./button";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { useFieldId } from "./field-context";
+import { FocusPause } from "./focus-pause";
 import {
   Command,
   CommandEmpty,
@@ -62,21 +63,6 @@ export function Combobox({
   // a screen reader reads this dropdown as an unnamed combobox.
   const fieldId = useFieldId();
 
-  // Scrolling the option list inside a Dialog.
-  //
-  // Radix Dialog locks scrolling to its own content subtree: it wraps DialogContent in
-  // react-remove-scroll with `shards: [contentRef]`, and wheel events whose target sits outside
-  // that subtree get swallowed. Our PopoverContent is portalled to the body, so it IS outside, and
-  // the list refuses to scroll with the wheel. Keyboard navigation still works, which is why the
-  // bug looks like "the dropdown is broken" rather than "the page is locked".
-  //
-  // A modal popover installs its own scroll lock and becomes the innermost one, so its content
-  // scrolls again. That is Radix's intended answer here.
-  //
-  // Applied ONLY inside a dialog. Modal everywhere would lock page scroll while any dropdown is
-  // open and swallow the first click on the next control, which on a filter bar with several
-  // dropdowns side by side is a worse bug than the one being fixed. Whether this combobox sits in
-  // a dialog cannot change after mount, so it is detected once.
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const [inDialog, setInDialog] = React.useState(false);
   React.useEffect(() => {
@@ -92,10 +78,67 @@ export function Combobox({
   // Drive cmdk's highlight so the list opens scrolled to the current selection (empty = top of list).
   const [highlighted, setHighlighted] = React.useState(selectedValue);
 
+  const list = (
+    <Command
+      value={highlighted}
+      onValueChange={setHighlighted}
+      filter={(itemValue, search) =>
+        itemValue.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+      }
+    >
+      <CommandInput placeholder={searchPlaceholder ?? "Search …"} />
+      <CommandList className="scroll-py-3">
+        <CommandEmpty>{emptyText ?? "No match found."}</CommandEmpty>
+        {options.map((opt) => (
+          <CommandItem
+            key={opt.value}
+            // cmdk matches + dedupes on this string; include label + keywords + value.
+            value={`${opt.label} ${opt.keywords ?? ""} ${opt.value}`}
+            disabled={opt.disabled}
+            onSelect={() => {
+              if (opt.disabled) return;
+              onValueChange(opt.value);
+              setOpen(false);
+            }}
+            className={cn(
+              "whitespace-normal data-[selected=true]:bg-accent",
+              opt.disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+            )}
+          >
+            {(opt.depth ?? 0) > 0 && (
+              <span
+                aria-hidden="true"
+                className="-my-1.5 self-stretch shrink-0"
+                style={{
+                  width: (opt.depth ?? 0) * 16,
+                  backgroundImage:
+                    "repeating-linear-gradient(to right, transparent 0, transparent 7px, var(--border) 7px, var(--border) 8px, transparent 8px, transparent 16px)",
+                }}
+              />
+            )}
+            <Check
+              className={cn(
+                "size-4 shrink-0",
+                value === opt.value ? "opacity-100 text-brand" : "opacity-0",
+              )}
+            />
+            <span className="min-w-0">
+              <span className={cn("block", value === opt.value && "font-medium text-brand")}>
+                {opt.label}
+              </span>
+              {opt.hint && (
+                <span className="mt-0.5 block text-xs text-muted-foreground">{opt.hint}</span>
+              )}
+            </span>
+          </CommandItem>
+        ))}
+      </CommandList>
+    </Command>
+  );
+
   return (
     <Popover
       open={open}
-      modal={inDialog}
       onOpenChange={(o) => {
         setOpen(o);
         if (o) setHighlighted(selectedValue);
@@ -130,61 +173,7 @@ export function Combobox({
         align="start"
         className={cn("w-[var(--radix-popover-trigger-width)] p-0", contentClassName)}
       >
-        <Command
-          value={highlighted}
-          onValueChange={setHighlighted}
-          filter={(itemValue, search) =>
-            itemValue.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
-          }
-        >
-          <CommandInput placeholder={searchPlaceholder ?? "Search …"} />
-                    <CommandList className="scroll-py-3">
-            <CommandEmpty>{emptyText ?? "No match found."}</CommandEmpty>
-            {options.map((opt) => (
-              <CommandItem
-                key={opt.value}
-                // cmdk matches + dedupes on this string; include label + keywords + value.
-                value={`${opt.label} ${opt.keywords ?? ""} ${opt.value}`}
-                disabled={opt.disabled}
-                onSelect={() => {
-                  if (opt.disabled) return;
-                  onValueChange(opt.value);
-                  setOpen(false);
-                }}
-                className={cn(
-                  "whitespace-normal data-[selected=true]:bg-accent",
-                  opt.disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
-                )}
-              >
-                  {(opt.depth ?? 0) > 0 && (
-                    <span
-                      aria-hidden="true"
-                      className="-my-1.5 self-stretch shrink-0"
-                      style={{
-                        width: (opt.depth ?? 0) * 16,
-                        backgroundImage:
-                          "repeating-linear-gradient(to right, transparent 0, transparent 7px, var(--border) 7px, var(--border) 8px, transparent 8px, transparent 16px)",
-                      }}
-                    />
-                  )}
-                <Check
-                  className={cn(
-                    "size-4 shrink-0",
-                    value === opt.value ? "opacity-100 text-brand" : "opacity-0",
-                  )}
-                />
-                <span className="min-w-0">
-                  <span className={cn("block", value === opt.value && "font-medium text-brand")}>
-                    {opt.label}
-                  </span>
-                  {opt.hint && (
-                    <span className="mt-0.5 block text-xs text-muted-foreground">{opt.hint}</span>
-                  )}
-                </span>
-              </CommandItem>
-            ))}
-          </CommandList>
-        </Command>
+        {inDialog ? <FocusPause>{list}</FocusPause> : list}
       </PopoverContent>
     </Popover>
   );

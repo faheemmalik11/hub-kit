@@ -49,6 +49,7 @@ export interface ApprovalRulesLabels {
   ladder: {
     newRule: string;
     empty: string;
+    emptyHint?: string;
   };
   row: {
     edit: string;

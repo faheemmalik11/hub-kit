@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   ChevronDown,
@@ -11,6 +11,7 @@ import {
 import { Button } from "./button";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { cn } from "../lib/class-names";
+import { FocusPause } from "./focus-pause";
 
 export interface TreePickerNode {
   value: string;
@@ -78,6 +79,12 @@ export function TreePicker({
   const [expanded, setExpanded] = useState<Set<string>>(() =>
     expandedForSelection(nodes, values),
   );
+
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const [inDialog, setInDialog] = useState(false);
+  useEffect(() => {
+    setInDialog(!!triggerRef.current?.closest('[role="dialog"], [role="alertdialog"]'));
+  }, []);
 
   const labelByValue = useMemo(() => {
     const labels = new Map<string, string>();
@@ -151,47 +158,18 @@ export function TreePicker({
     setOpen(false);
   };
 
-  return (
-    <Popover
-      modal
-      open={open}
-      onOpenChange={(nextOpen) => {
-        setOpen(nextOpen);
-        if (nextOpen) {
-          setQuery("");
-          setExpanded(expandedForSelection(nodes, values));
-        }
-      }}
-    >
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          disabled={disabled}
-          className={cn(
-            "h-auto min-h-9 w-full cursor-pointer justify-between whitespace-normal px-3 py-2 text-left font-normal",
-            values.length === 0 && "text-muted-foreground",
-            className,
-          )}
-        >
-          <span className="min-w-0 truncate">{triggerLabel}</span>
-          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="start"
-        className="w-[var(--radix-popover-trigger-width)] p-0"
-      >
-        <div className="flex items-center gap-2 border-b border-border px-3">
-          <Search className="size-4 shrink-0 text-muted-foreground" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={searchPlaceholder ?? "Search …"}
-            className="h-9 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-          />
-        </div>
-        <div className="max-h-72 overflow-y-auto p-1">
+  const panel = (
+    <div>
+      <div className="flex items-center gap-2 border-b border-border px-3">
+        <Search className="size-4 shrink-0 text-muted-foreground" />
+        <input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={searchPlaceholder ?? "Search …"}
+          className="h-9 w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+        />
+      </div>
+      <div className="max-h-72 overflow-y-auto p-1">
           {/* Always offered, not only once something is picked: "no folder" is a choice somebody
               can see and take, rather than a state reached by clicking the chosen row again. */}
           {!multi && noneText && (
@@ -294,6 +272,41 @@ export function TreePicker({
             );
           })}
         </div>
+      </div>
+  );
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (nextOpen) {
+          setQuery("");
+          setExpanded(expandedForSelection(nodes, values));
+        }
+      }}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          ref={triggerRef}
+          type="button"
+          variant="outline"
+          disabled={disabled}
+          className={cn(
+            "h-auto min-h-9 w-full cursor-pointer justify-between whitespace-normal px-3 py-2 text-left font-normal",
+            values.length === 0 && "text-muted-foreground",
+            className,
+          )}
+        >
+          <span className="min-w-0 truncate">{triggerLabel}</span>
+          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        className="w-[var(--radix-popover-trigger-width)] p-0"
+      >
+        {inDialog ? <FocusPause>{panel}</FocusPause> : panel}
       </PopoverContent>
     </Popover>
   );

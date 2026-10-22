@@ -123,7 +123,7 @@ function SheetBody({
 
   const [values, setValues] = useState(initialValues);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(false);
+  const [saveError, setSaveError] = useState<string | true | false>(false);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<ConnectionTestResult | null>(
     null,
@@ -240,8 +240,8 @@ function SheetBody({
     try {
       await onSave(source.id, values);
       onClose();
-    } catch {
-      setSaveError(true);
+    } catch (e) {
+      setSaveError(e instanceof Error && e.message ? e.message : true);
     } finally {
       setSaving(false);
     }
@@ -406,7 +406,9 @@ function SheetBody({
 
       <SheetFooter className="sticky bottom-0 -mx-6 mt-auto flex-col gap-2 border-t border-border bg-popover px-6 py-4">
         {saveError && (
-          <p className="text-sm text-destructive">{labels.sheet.saveFailed}</p>
+          <p className="text-sm text-destructive">
+            {typeof saveError === "string" ? saveError : labels.sheet.saveFailed}
+          </p>
         )}
         {!canEdit && (
           <p className="text-xs text-muted-foreground">

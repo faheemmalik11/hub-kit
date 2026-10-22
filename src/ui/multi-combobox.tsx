@@ -6,6 +6,7 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "../lib/class-names";
 import { Button } from "./button";
 import { Popover, PopoverContent, PopoverTrigger } from "./popover";
+import { FocusPause } from "./focus-pause";
 import {
   Command,
   CommandEmpty,
@@ -55,7 +56,6 @@ export function MultiCombobox({
     );
   }
 
-  // Same fix as Combobox: inside a Dialog the popover must be modal or its list cannot scroll.
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const [inDialog, setInDialog] = React.useState(false);
   React.useEffect(() => {
@@ -75,10 +75,58 @@ export function MultiCombobox({
         ? selected[0].label
         : selectedCountText(selected.length);
 
+  const list = (
+    <Command
+      value={highlighted}
+      onValueChange={setHighlighted}
+      filter={(itemValue, search) =>
+        itemValue.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
+      }
+    >
+      <CommandInput placeholder={searchPlaceholder ?? "Search …"} />
+      <CommandList className="scroll-py-3">
+        <CommandEmpty>{emptyText ?? "No match found."}</CommandEmpty>
+        {options.map((option) => {
+          const isSelected = values.includes(option.value);
+          return (
+            <CommandItem
+              key={option.value}
+              value={`${option.label} ${option.keywords ?? ""} ${option.value}`}
+              onSelect={() => toggle(option.value)}
+              className="cursor-pointer gap-2 whitespace-normal data-[selected=true]:bg-accent"
+            >
+              {(option.depth ?? 0) > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="-my-1.5 self-stretch shrink-0"
+                  style={{
+                    width: (option.depth ?? 0) * 16,
+                    backgroundImage:
+                      "repeating-linear-gradient(to right, transparent 0, transparent 7px, var(--border) 7px, var(--border) 8px, transparent 8px, transparent 16px)",
+                  }}
+                />
+              )}
+              <span
+                className={cn(
+                  "flex size-4 shrink-0 items-center justify-center rounded-[4px] border",
+                  isSelected
+                    ? "border-brand bg-brand text-primary-foreground"
+                    : "border-input bg-background",
+                )}
+              >
+                {isSelected && <Check className="size-3" />}
+              </span>
+              <span className={cn(isSelected && "font-medium text-brand")}>{option.label}</span>
+            </CommandItem>
+          );
+        })}
+      </CommandList>
+    </Command>
+  );
+
   return (
     <Popover
       open={open}
-      modal={inDialog}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
         if (nextOpen) setHighlighted(firstSelectedValue);
@@ -106,52 +154,7 @@ export function MultiCombobox({
         align="start"
         className={cn("w-[var(--radix-popover-trigger-width)] p-0", contentClassName)}
       >
-        <Command
-          value={highlighted}
-          onValueChange={setHighlighted}
-          filter={(itemValue, search) =>
-            itemValue.toLowerCase().includes(search.toLowerCase()) ? 1 : 0
-          }
-        >
-          <CommandInput placeholder={searchPlaceholder ?? "Search …"} />
-          <CommandList className="scroll-py-3">
-            <CommandEmpty>{emptyText ?? "No match found."}</CommandEmpty>
-            {options.map((option) => {
-              const isSelected = values.includes(option.value);
-              return (
-                <CommandItem
-                  key={option.value}
-                  value={`${option.label} ${option.keywords ?? ""} ${option.value}`}
-                  onSelect={() => toggle(option.value)}
-                  className="cursor-pointer gap-2 whitespace-normal data-[selected=true]:bg-accent"
-                >
-                  {(option.depth ?? 0) > 0 && (
-                    <span
-                      aria-hidden="true"
-                      className="-my-1.5 self-stretch shrink-0"
-                      style={{
-                        width: (option.depth ?? 0) * 16,
-                        backgroundImage:
-                          "repeating-linear-gradient(to right, transparent 0, transparent 7px, var(--border) 7px, var(--border) 8px, transparent 8px, transparent 16px)",
-                      }}
-                    />
-                  )}
-                  <span
-                    className={cn(
-                      "flex size-4 shrink-0 items-center justify-center rounded-[4px] border",
-                      isSelected
-                        ? "border-brand bg-brand text-primary-foreground"
-                        : "border-input bg-background",
-                    )}
-                  >
-                    {isSelected && <Check className="size-3" />}
-                  </span>
-                  <span className={cn(isSelected && "font-medium text-brand")}>{option.label}</span>
-                </CommandItem>
-              );
-            })}
-          </CommandList>
-        </Command>
+        {inDialog ? <FocusPause>{list}</FocusPause> : list}
       </PopoverContent>
     </Popover>
   );

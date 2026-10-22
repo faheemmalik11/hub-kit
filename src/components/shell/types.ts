@@ -7,6 +7,8 @@ export type ShellNavLink = {
   icon: LucideIcon;
   // Rendered as data-tour on the menu item, so a project's tour can spotlight this entry.
   tourId?: string;
+  // Greyed out and unclickable, e.g. while a guided practice task restricts where you can go.
+  disabled?: boolean;
 };
 
 export type ShellNavGroup = {

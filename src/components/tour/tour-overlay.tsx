@@ -1,49 +1,36 @@
-import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Popover, PopoverAnchor, PopoverArrow, PopoverContent } from "../../ui/popover";
+import {
+  SPOTLIGHT_CARD_GAP,
+  SPOTLIGHT_CARD_HEIGHT_FALLBACK,
+  SPOTLIGHT_SCREEN_EDGE,
+  initialSpotlightVisibleArea,
+  isInsideSpotlightCard,
+  makeRoomForSpotlightCard,
+  pickSpotlightPlacement,
+  readSpotlightVisibleArea,
+  spotlightBandLeftForTarget,
+  spotlightBox,
+  spotlightCardCanScroll,
+  spotlightDockedCardStyle,
+  spotlightObstructionInside,
+  stickyBarBottomAboveSpotlight,
+  type SpotlightTargetRect,
+  type SpotlightVisibleArea,
+} from "../../lib/spotlight-placement";
 import { findTourTarget } from "./find-target";
 import { TourCard } from "./tour-card";
 import { useTour } from "./use-tour";
-import type { TourPlacement, TourStep } from "./types";
 
-interface TargetRect {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-}
-
-interface VisibleArea {
-  top: number;
-  left: number;
-  width: number;
-  height: number;
-}
-
-interface VerticalBand {
-  top: number;
-  bottom: number;
-}
-
-type CardPlacement = TourPlacement | "dockTop" | "dockBottom";
-
-const SPOTLIGHT_PADDING = 6;
-const RING_WIDTH = 5;
 const MOVE_DURATION = "220ms";
-const CARD_GAP = 12;
-const CARD_HEIGHT_FALLBACK = 240;
-const MAX_CARD_WIDTH = 352;
-const SCREEN_MARGIN = 32;
-const SCREEN_EDGE = 16;
-const DOCKED_CARD_SHARE = 0.6;
-const CARD_SELECTOR = "[data-tour-card]";
 
 export function TourOverlay() {
   const tour = useTour();
   const step = tour?.step ?? null;
   const target = step?.target ?? null;
-  const [rect, setRect] = useState<TargetRect | null>(null);
-  const [visibleArea, setVisibleArea] = useState<VisibleArea>(initialVisibleArea);
+  const [rect, setRect] = useState<SpotlightTargetRect | null>(null);
+  const [visibleArea, setVisibleArea] = useState<SpotlightVisibleArea>(initialSpotlightVisibleArea);
   const [topObstruction, setTopObstruction] = useState(0);
   const [cardElement, setCardElement] = useState<HTMLDivElement | null>(null);
   const [cardHeight, setCardHeight] = useState(0);
@@ -52,7 +39,7 @@ export function TourOverlay() {
   skipMissingStep.current = tour ? tour.next : () => {};
 
   useEffect(() => {
-    const updateVisibleArea = () => setVisibleArea(readVisibleArea());
+    const updateVisibleArea = () => setVisibleArea(readSpotlightVisibleArea());
     updateVisibleArea();
     window.addEventListener("resize", updateVisibleArea);
     window.visualViewport?.addEventListener("resize", updateVisibleArea);
@@ -93,12 +80,8 @@ export function TourOverlay() {
       attempts += 1;
       const element = findTourTarget(target);
       if (element) {
-        // Bring the step into view before measuring. A tour opened while the reader is halfway
-        // down a long screen used to highlight something off-screen: the page dimmed and nothing
-        // visible was marked. Only scrolls when the element is not already fully in view, so a
-        // step that is on screen does not jump the page under the reader.
         const box = element.getBoundingClientRect();
-        const area = readVisibleArea();
+        const area = readSpotlightVisibleArea();
         const offScreenVertically = box.top < area.top || box.bottom > area.top + area.height;
         const offScreenSideways = box.left < area.left - 1 || box.right > area.left + area.width + 1;
         if (offScreenVertically || offScreenSideways) {
@@ -129,7 +112,6 @@ export function TourOverlay() {
       return;
     }
     const observer = new ResizeObserver(() => {
-      // offsetHeight counts the card's padding, which the observer's content box leaves out.
       const height = cardElement.offsetHeight;
       setCardHeight((current) => (current === height ? current : height));
     });
@@ -143,7 +125,7 @@ export function TourOverlay() {
       roomMadeFor.current = null;
       return;
     }
-    const neededRoom = (cardHeight || CARD_HEIGHT_FALLBACK) + CARD_GAP * 2;
+    const neededRoom = (cardHeight || SPOTLIGHT_CARD_HEIGHT_FALLBACK) + SPOTLIGHT_CARD_GAP * 2;
     const key = `${target}:${neededRoom}:${topObstruction}`;
     if (roomMadeFor.current === key) {
       return;
@@ -153,7 +135,7 @@ export function TourOverlay() {
       return;
     }
     roomMadeFor.current = key;
-    makeRoomForCard(element, neededRoom, topObstruction);
+    makeRoomForSpotlightCard(element, neededRoom, topObstruction);
   }, [target, cardHeight, topObstruction]);
 
   useEffect(() => {
@@ -161,7 +143,7 @@ export function TourOverlay() {
       return;
     }
     const frame = requestAnimationFrame(() => {
-      setTopObstruction(stickyBarBottom(overlayRoot.current));
+      setTopObstruction(stickyBarBottomAboveSpotlight(overlayRoot.current));
     });
     return () => cancelAnimationFrame(frame);
   }, [tour?.isOpen, target]);
@@ -175,7 +157,7 @@ export function TourOverlay() {
       lastTouchY = event.touches[0]?.clientY ?? 0;
     };
     const blockWheel = (event: WheelEvent) => {
-      if (!cardCanScroll(event.target, event.deltaY)) {
+      if (!spotlightCardCanScroll(event.target, event.deltaY)) {
         event.preventDefault();
       }
     };
@@ -183,13 +165,13 @@ export function TourOverlay() {
       const touchY = event.touches[0]?.clientY ?? lastTouchY;
       const deltaY = lastTouchY - touchY;
       lastTouchY = touchY;
-      if (!cardCanScroll(event.target, deltaY)) {
+      if (!spotlightCardCanScroll(event.target, deltaY)) {
         event.preventDefault();
       }
     };
     const scrollKeys = new Set(["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "]);
     const blockScrollKeys = (event: KeyboardEvent) => {
-      if (scrollKeys.has(event.key) && !insideCard(event.target)) {
+      if (scrollKeys.has(event.key) && !isInsideSpotlightCard(event.target)) {
         event.preventDefault();
       }
     };
@@ -236,9 +218,15 @@ export function TourOverlay() {
     return null;
   }
 
-  const measuredCardHeight = cardHeight || CARD_HEIGHT_FALLBACK;
-  const placement = pickPlacement(step.placement, rect, visibleArea, measuredCardHeight, topObstruction);
-  const freeBand = bandLeftForTarget(placement, visibleArea, measuredCardHeight, topObstruction);
+  const measuredCardHeight = cardHeight || SPOTLIGHT_CARD_HEIGHT_FALLBACK;
+  const placement = pickSpotlightPlacement(
+    step.placement,
+    rect,
+    visibleArea,
+    measuredCardHeight,
+    topObstruction,
+  );
+  const freeBand = spotlightBandLeftForTarget(placement, visibleArea, measuredCardHeight, topObstruction);
   const spotlight = spotlightBox(rect, freeBand);
   const card = (
     <TourCard
@@ -281,15 +269,15 @@ export function TourOverlay() {
             width: visibleArea.width,
             height: visibleArea.height,
             alignItems: placement === "dockTop" ? "flex-start" : "flex-end",
-            paddingTop: obstructionInside(visibleArea, topObstruction) + SCREEN_EDGE,
-            paddingBottom: SCREEN_EDGE,
+            paddingTop: spotlightObstructionInside(visibleArea, topObstruction) + SPOTLIGHT_SCREEN_EDGE,
+            paddingBottom: SPOTLIGHT_SCREEN_EDGE,
           }}
         >
           <div
             ref={attachCard}
             data-tour-card=""
             className="pointer-events-auto rounded-2xl bg-popover px-4 pt-4 pb-2.5 text-popover-foreground shadow-xl sm:px-5 sm:pt-5 sm:pb-3.5"
-            style={dockedCardStyle(visibleArea, topObstruction)}
+            style={spotlightDockedCardStyle(visibleArea, topObstruction)}
             aria-label={tour.labels.cardTitle}
           >
             {card}
@@ -308,13 +296,13 @@ export function TourOverlay() {
             data-tour-card=""
             side={placement}
             align="center"
-            sideOffset={CARD_GAP}
+            sideOffset={SPOTLIGHT_CARD_GAP}
             arrowPadding={16}
             collisionPadding={{
-              top: Math.max(SCREEN_EDGE, topObstruction + CARD_GAP),
-              right: SCREEN_EDGE,
-              bottom: SCREEN_EDGE,
-              left: SCREEN_EDGE,
+              top: Math.max(SPOTLIGHT_SCREEN_EDGE, topObstruction + SPOTLIGHT_CARD_GAP),
+              right: SPOTLIGHT_SCREEN_EDGE,
+              bottom: SPOTLIGHT_SCREEN_EDGE,
+              left: SPOTLIGHT_SCREEN_EDGE,
             }}
             className="z-[60] w-[min(var(--tour-card-width,22rem),calc(100vw-2rem))] rounded-2xl border-0 px-4 pt-4 pb-2.5 shadow-xl sm:px-5 sm:pt-5 sm:pb-3.5"
             onOpenAutoFocus={(event) => event.preventDefault()}
@@ -330,193 +318,4 @@ export function TourOverlay() {
       )}
     </div>
   );
-}
-
-function initialVisibleArea(): VisibleArea {
-  if (typeof window === "undefined") {
-    return { top: 0, left: 0, width: 0, height: 0 };
-  }
-  return readVisibleArea();
-}
-
-// The visual viewport is what the phone really shows, even when the page is wider than the screen.
-function readVisibleArea(): VisibleArea {
-  const visual = window.visualViewport;
-  if (!visual) {
-    return { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
-  }
-  return { top: visual.offsetTop, left: visual.offsetLeft, width: visual.width, height: visual.height };
-}
-
-function obstructionInside(area: VisibleArea, topObstruction: number): number {
-  return Math.max(0, topObstruction - area.top);
-}
-
-function screenBand(area: VisibleArea, topObstruction: number): VerticalBand {
-  return { top: Math.max(area.top, topObstruction), bottom: area.top + area.height };
-}
-
-function pickPlacement(
-  preferred: TourStep["placement"],
-  rect: TargetRect,
-  area: VisibleArea,
-  cardHeight: number,
-  topObstruction: number,
-): CardPlacement {
-  if (area.width === 0) {
-    return preferred ?? "bottom";
-  }
-  const band = screenBand(area, topObstruction);
-  const targetBottom = rect.top + rect.height;
-  const targetOnScreen = rect.top < band.bottom && targetBottom > band.top;
-  const cardWidth = Math.min(MAX_CARD_WIDTH, area.width - SCREEN_MARGIN);
-  const need = cardHeight + CARD_GAP * 2;
-  const fits = {
-    top: targetOnScreen && rect.top - band.top >= need,
-    bottom: targetOnScreen && band.bottom - targetBottom >= need,
-    left: targetOnScreen && rect.left - area.left >= cardWidth + CARD_GAP,
-    right: targetOnScreen && area.left + area.width - (rect.left + rect.width) >= cardWidth + CARD_GAP,
-  };
-  if (preferred && fits[preferred]) {
-    return preferred;
-  }
-  if (fits.bottom) return "bottom";
-  if (fits.top) return "top";
-  if (fits.right) return "right";
-  if (fits.left) return "left";
-  return pickDockEdge(rect, area, cardHeight, topObstruction);
-}
-
-function pickDockEdge(
-  rect: TargetRect,
-  area: VisibleArea,
-  cardHeight: number,
-  topObstruction: number,
-): "dockTop" | "dockBottom" {
-  const shownBelowTopCard = visibleHeight(rect, bandLeftForTarget("dockTop", area, cardHeight, topObstruction));
-  const shownAboveBottomCard = visibleHeight(rect, bandLeftForTarget("dockBottom", area, cardHeight, topObstruction));
-  return shownBelowTopCard > shownAboveBottomCard ? "dockTop" : "dockBottom";
-}
-
-function bandLeftForTarget(
-  placement: CardPlacement,
-  area: VisibleArea,
-  cardHeight: number,
-  topObstruction: number,
-): VerticalBand {
-  const band = screenBand(area, topObstruction);
-  const cardRoom = cardHeight + SCREEN_EDGE + CARD_GAP;
-  if (placement === "dockTop") {
-    return { top: band.top + cardRoom, bottom: band.bottom };
-  }
-  if (placement === "dockBottom") {
-    return { top: band.top, bottom: band.bottom - cardRoom };
-  }
-  return band;
-}
-
-function visibleHeight(rect: TargetRect, band: VerticalBand): number {
-  return Math.max(0, Math.min(rect.top + rect.height, band.bottom) - Math.max(rect.top, band.top));
-}
-
-// The ring stays inside the free band, so a tall section is marked only where it can be seen.
-function spotlightBox(rect: TargetRect, band: VerticalBand): TargetRect {
-  const top = Math.max(rect.top - SPOTLIGHT_PADDING, band.top + RING_WIDTH);
-  const bottom = Math.min(rect.top + rect.height + SPOTLIGHT_PADDING, band.bottom - RING_WIDTH);
-  return {
-    top,
-    left: rect.left - SPOTLIGHT_PADDING,
-    width: rect.width + SPOTLIGHT_PADDING * 2,
-    height: Math.max(0, bottom - top),
-  };
-}
-
-function dockedCardStyle(area: VisibleArea, topObstruction: number): CSSProperties {
-  const usableHeight = area.height - obstructionInside(area, topObstruction);
-  return {
-    width: `min(var(--tour-card-width, 22rem), ${area.width - SCREEN_MARGIN}px)`,
-    "--radix-popover-content-available-height": `${Math.round(usableHeight * DOCKED_CARD_SHARE)}px`,
-  } as CSSProperties;
-}
-
-function insideCard(eventTarget: EventTarget | null): boolean {
-  return eventTarget instanceof Element && eventTarget.closest(CARD_SELECTOR) !== null;
-}
-
-// A swipe on the card may only scroll the card, never the page behind it.
-function cardCanScroll(eventTarget: EventTarget | null, deltaY: number): boolean {
-  if (!(eventTarget instanceof Element)) {
-    return false;
-  }
-  const card = eventTarget.closest(CARD_SELECTOR);
-  let node: Element | null = eventTarget;
-  while (card && node && card.contains(node)) {
-    if (canScrollInDirection(node, deltaY)) {
-      return true;
-    }
-    node = node.parentElement;
-  }
-  return false;
-}
-
-function canScrollInDirection(element: Element, deltaY: number): boolean {
-  const overflowY = getComputedStyle(element).overflowY;
-  if (overflowY !== "auto" && overflowY !== "scroll") {
-    return false;
-  }
-  if (deltaY > 0) {
-    return element.scrollTop + element.clientHeight < element.scrollHeight - 1;
-  }
-  if (deltaY < 0) {
-    return element.scrollTop > 0;
-  }
-  return false;
-}
-
-function makeRoomForCard(element: HTMLElement, neededRoom: number, topObstruction: number) {
-  const box = element.getBoundingClientRect();
-  const band = screenBand(readVisibleArea(), topObstruction);
-  const fitsAbove = box.top - band.top >= neededRoom && box.bottom <= band.bottom;
-  const fitsBelow = band.bottom - box.bottom >= neededRoom && box.top >= band.top;
-  if (fitsAbove || fitsBelow) {
-    return;
-  }
-
-  const container = scrollingAncestor(element);
-  const fitsWithRoomBelow = box.height + neededRoom <= band.bottom - band.top;
-  const desiredTop = fitsWithRoomBelow
-    ? band.bottom - neededRoom - box.height
-    : band.top + SPOTLIGHT_PADDING + RING_WIDTH;
-  container.scrollBy({ top: box.top - desiredTop, behavior: "smooth" });
-}
-
-function scrollingAncestor(element: HTMLElement): HTMLElement {
-  let node = element.parentElement;
-  while (node) {
-    const overflowY = getComputedStyle(node).overflowY;
-    if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight) {
-      return node;
-    }
-    node = node.parentElement;
-  }
-  return (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
-}
-
-function stickyBarBottom(overlayRoot: HTMLElement | null): number {
-  const area = readVisibleArea();
-  const probes = document.elementsFromPoint(area.left + area.width / 2, area.top + 4);
-  for (const probe of probes) {
-    if (overlayRoot && overlayRoot.contains(probe)) {
-      continue;
-    }
-    let node: HTMLElement | null = probe as HTMLElement;
-    while (node && node !== document.body) {
-      const position = getComputedStyle(node).position;
-      if (position === "sticky" || position === "fixed") {
-        return Math.ceil(node.getBoundingClientRect().bottom);
-      }
-      node = node.parentElement;
-    }
-  }
-  return 0;
 }

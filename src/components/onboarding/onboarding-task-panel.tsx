@@ -43,7 +43,7 @@ export function OnboardingTaskPanel({
   onClose,
   onRestart,
 }: OnboardingTaskPanelProps) {
-  const { task, currentStep, stepStatuses, isFinished, completeInfoStep, restart } = runner;
+  const { task, currentStep, stepStatuses, isFinished, showHelp, completeInfoStep, restart } = runner;
   const completedCount = stepStatuses.filter((status) => status === "done").length;
   const target = isFinished ? null : currentStep.target;
   const stepPath = isFinished ? null : (currentStep.path ?? null);
@@ -116,23 +116,24 @@ export function OnboardingTaskPanel({
   return (
     <div
       className={cn(
-        "flex w-full max-w-sm flex-col gap-4 rounded-xl border border-border bg-card p-4 shadow-xl",
+        "flex w-full max-w-sm flex-col overflow-hidden rounded-2xl border-2 border-[var(--tour-accent,var(--primary))] bg-card shadow-2xl ring-4 ring-[var(--tour-accent,var(--primary))]/20",
         className,
       )}
     >
-      <div className="flex items-center gap-3">
-        <div className="relative shrink-0">
+      <div className="flex items-center gap-3 bg-[var(--tour-accent,var(--primary))] px-4 py-3 text-primary-foreground">
+        <div className="relative shrink-0 rounded-full bg-card p-0.5">
           <ProgressRing completed={completedCount} total={task.steps.length} size={44} strokeWidth={4} />
           <span className="absolute inset-0 grid place-items-center text-[10px] font-bold text-foreground tabular-nums">
             {completedCount}/{task.steps.length}
           </span>
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-sm font-semibold text-foreground">{task.title}</h3>
-          <p className="mt-0.5 text-sm text-muted-foreground">{task.goal}</p>
+          <h3 className="text-sm font-semibold text-primary-foreground">{task.title}</h3>
+          <p className="mt-0.5 text-sm text-primary-foreground/80">{task.goal}</p>
         </div>
       </div>
 
+      <div className="flex flex-col gap-4 p-4">
       {isFinished && (
         <div className="rounded-lg bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
           {labels.finishedTitle}
@@ -169,9 +170,9 @@ export function OnboardingTaskPanel({
         </div>
       )}
 
-      {!isFinished && !onWrongPage && !targetOffScreen && (currentStep.type === "info" || currentStep.helpText) && (
+      {!isFinished && !onWrongPage && !targetOffScreen && (currentStep.type === "info" || (showHelp && currentStep.helpText)) && (
         <div className="rounded-lg bg-muted/40 p-3">
-          {currentStep.helpText && (
+          {showHelp && currentStep.helpText && (
             <p className="text-sm text-muted-foreground">{currentStep.helpText}</p>
           )}
           {currentStep.type === "info" && (
@@ -201,6 +202,7 @@ export function OnboardingTaskPanel({
             {labels.closeButton}
           </Button>
         )}
+      </div>
       </div>
     </div>
   );

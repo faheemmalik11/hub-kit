@@ -105,7 +105,13 @@ export function OnboardingHighlight({
   }
 
   const measuredCardHeight = cardHeight || SPOTLIGHT_CARD_HEIGHT_FALLBACK;
-  const placement = pickSpotlightPlacement(undefined, rect, visibleArea, measuredCardHeight, topObstruction);
+  const placement = pickSpotlightPlacement(
+    currentStep.placement,
+    rect,
+    visibleArea,
+    measuredCardHeight,
+    topObstruction,
+  );
   const freeBand = spotlightBandLeftForTarget(placement, visibleArea, measuredCardHeight, topObstruction);
   const spotlight = spotlightBox(rect, freeBand);
   const card = (
@@ -114,6 +120,7 @@ export function OnboardingHighlight({
       stepIndex={currentStepIndex}
       stepCount={task.steps.length}
       labels={labels}
+      showHelp={runner.showHelp}
       onCompleteInfoStep={completeInfoStep}
     />
   );
@@ -179,7 +186,7 @@ export function OnboardingHighlight({
               bottom: SPOTLIGHT_SCREEN_EDGE,
               left: SPOTLIGHT_SCREEN_EDGE,
             }}
-            className="pointer-events-auto z-[60] w-[min(var(--tour-card-width,22rem),calc(100vw-2rem))] rounded-2xl border-0 px-4 pt-4 pb-2.5 shadow-xl sm:px-5 sm:pt-5 sm:pb-3.5"
+            className="pointer-events-auto z-[60] w-[min(var(--tour-card-width,22rem),calc(100vw-2rem))] rounded-2xl border-2 border-[var(--tour-accent,var(--primary))] px-4 pt-4 pb-2.5 shadow-2xl ring-4 ring-[var(--tour-accent,var(--primary))]/20 sm:px-5 sm:pt-5 sm:pb-3.5"
             onOpenAutoFocus={(event) => event.preventDefault()}
             onEscapeKeyDown={(event) => event.preventDefault()}
           >

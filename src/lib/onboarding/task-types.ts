@@ -1,3 +1,4 @@
+import type { SpotlightSide } from "../spotlight-placement";
 import type { OnboardingCompletionCondition } from "./types";
 
 export type OnboardingStepType =
@@ -25,6 +26,7 @@ export interface OnboardingStep {
   deviationQuestion?: OnboardingDeviationQuestion;
   path?: string;
   pageLabel?: string;
+  placement?: SpotlightSide;
   sampleFileUrl?: string;
   sampleFileName?: string;
   sampleFileDropPath?: string;

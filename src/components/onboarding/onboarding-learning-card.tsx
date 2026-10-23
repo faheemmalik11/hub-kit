@@ -7,6 +7,7 @@ export interface OnboardingLearningCardProps {
   stepIndex: number;
   stepCount: number;
   labels: OnboardingHighlightLabels;
+  showHelp: boolean;
   onCompleteInfoStep: () => void;
 }
 
@@ -15,6 +16,7 @@ export function OnboardingLearningCard({
   stepIndex,
   stepCount,
   labels,
+  showHelp,
   onCompleteInfoStep,
 }: OnboardingLearningCardProps) {
   return (
@@ -33,6 +35,11 @@ export function OnboardingLearningCard({
             {labels.outcomeTitle}
           </p>
           <p className="mt-0.5 text-sm text-foreground">{step.expectedOutcome}</p>
+        </div>
+      )}
+      {showHelp && step.helpText && (
+        <div className="mt-2 rounded-lg bg-amber-50 p-2.5">
+          <p className="text-sm text-amber-900">{step.helpText}</p>
         </div>
       )}
       {step.type === "info" ? (

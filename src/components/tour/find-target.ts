@@ -1,4 +1,12 @@
 export function findTourTarget(target: string): HTMLElement | null {
+  for (const alternative of target.split("|")) {
+    const found = findSingleTourTarget(alternative);
+    if (found) return found;
+  }
+  return null;
+}
+
+function findSingleTourTarget(target: string): HTMLElement | null {
   // A screen may carry the same anchor twice, once in the desktop layout and once in the mobile
   // one, with the inactive half hidden by CSS rather than unmounted. Taking the first match would
   // point the step at a zero-size element on the other breakpoint, so a laid-out one wins.

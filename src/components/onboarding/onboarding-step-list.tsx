@@ -29,7 +29,14 @@ export function OnboardingStepList({
         const status = statuses[index];
         const extra = renderStepExtra?.(step, index, status);
         return (
-          <li key={step.id} className="flex flex-col gap-2">
+          <li
+            key={step.id}
+            className={cn(
+              "flex flex-col gap-2",
+              status === "active" &&
+                "-mx-2 rounded-lg bg-[var(--tour-accent,var(--primary))]/10 px-2 py-1.5",
+            )}
+          >
             <div className="flex items-start gap-2.5">
               <span
                 className={cn(

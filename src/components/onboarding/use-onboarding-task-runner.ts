@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import type { OnboardingStep, OnboardingStepStatus, OnboardingTask } from "../../lib/onboarding";
 import { useOnboardingCompletion } from "./use-onboarding-completion";
+import { useOnboardingWrongAttempt } from "./use-onboarding-wrong-attempt";
 
 export interface OnboardingTaskRunner {
   task: OnboardingTask;
@@ -9,6 +10,7 @@ export interface OnboardingTaskRunner {
   currentStep: OnboardingStep;
   stepStatuses: OnboardingStepStatus[];
   isFinished: boolean;
+  showHelp: boolean;
   completeInfoStep: () => void;
   restart: () => void;
 }
@@ -22,26 +24,38 @@ export function useOnboardingTaskRunner(
   options?: OnboardingTaskRunnerOptions,
 ): OnboardingTaskRunner {
   const [currentStepIndex, setCurrentStepIndex] = useState(options?.initialStepIndex ?? 0);
+  const [helpStepIndex, setHelpStepIndex] = useState<number | null>(null);
   const isFinished = currentStepIndex >= task.steps.length;
   const currentStep = task.steps[currentStepIndex] ?? task.steps[task.steps.length - 1];
 
-  const advance = useCallback(() => {
-    setCurrentStepIndex((index) => Math.min(index + 1, task.steps.length));
-  }, [task.steps.length]);
+  const advanceFrom = useCallback(
+    (fromIndex: number) => {
+      setCurrentStepIndex((index) =>
+        index === fromIndex ? Math.min(index + 1, task.steps.length) : index,
+      );
+    },
+    [task.steps.length],
+  );
 
   useOnboardingCompletion(
     !isFinished && currentStep.type !== "info" ? currentStep.completionCondition : null,
-    advance,
+    () => advanceFrom(currentStepIndex),
+  );
+
+  useOnboardingWrongAttempt(
+    !isFinished && currentStep.type !== "info" ? currentStep.completionCondition : null,
+    () => setHelpStepIndex(currentStepIndex),
   );
 
   const completeInfoStep = useCallback(() => {
     if (!isFinished && currentStep.type === "info") {
-      advance();
+      advanceFrom(currentStepIndex);
     }
-  }, [isFinished, currentStep, advance]);
+  }, [isFinished, currentStep, currentStepIndex, advanceFrom]);
 
   const restart = useCallback(() => {
     setCurrentStepIndex(0);
+    setHelpStepIndex(null);
   }, []);
 
   const stepStatuses = useMemo<OnboardingStepStatus[]>(
@@ -58,6 +72,7 @@ export function useOnboardingTaskRunner(
     currentStep,
     stepStatuses,
     isFinished,
+    showHelp: helpStepIndex === currentStepIndex,
     completeInfoStep,
     restart,
   };

@@ -27,6 +27,7 @@ export interface OnboardingStep {
   path?: string;
   pageLabel?: string;
   placement?: SpotlightSide;
+  role?: string;
   sampleFileUrl?: string;
   sampleFileName?: string;
   sampleFileDropPath?: string;

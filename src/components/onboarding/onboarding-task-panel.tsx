@@ -27,6 +27,8 @@ export interface OnboardingTaskPanelProps {
   labels: OnboardingTaskPanelLabels;
   pathname: string;
   highlightLabels?: OnboardingHighlightLabels;
+  roleLabels?: Record<string, string>;
+  currentRoleLabel?: string;
   onNavigate?: (path: string) => void;
   className?: string;
   onClose?: () => void;
@@ -38,6 +40,8 @@ export function OnboardingTaskPanel({
   labels,
   pathname,
   highlightLabels = englishOnboardingHighlightLabels,
+  roleLabels,
+  currentRoleLabel,
   onNavigate,
   className,
   onClose,
@@ -130,6 +134,9 @@ export function OnboardingTaskPanel({
         <div className="min-w-0 flex-1">
           <h3 className="text-sm font-semibold text-primary-foreground">{task.title}</h3>
           <p className="mt-0.5 text-sm text-primary-foreground/80">{task.goal}</p>
+          {currentRoleLabel && (
+            <p className="mt-1 text-xs font-semibold text-primary-foreground">{currentRoleLabel}</p>
+          )}
         </div>
       </div>
 
@@ -183,7 +190,7 @@ export function OnboardingTaskPanel({
         </div>
       )}
 
-      <OnboardingStepList steps={task.steps} statuses={stepStatuses} renderStepExtra={renderStepExtra} />
+      <OnboardingStepList steps={task.steps} statuses={stepStatuses} roleLabels={roleLabels} renderStepExtra={renderStepExtra} />
 
       <div className="flex gap-2">
         <Button

@@ -13,6 +13,7 @@ const NUMBER_CIRCLE_CLASS: Record<OnboardingStepStatus, string> = {
 export interface OnboardingStepListProps {
   steps: OnboardingStep[];
   statuses: OnboardingStepStatus[];
+  roleLabels?: Record<string, string>;
   renderStepExtra?: (step: OnboardingStep, index: number, status: OnboardingStepStatus) => ReactNode;
   className?: string;
 }
@@ -20,6 +21,7 @@ export interface OnboardingStepListProps {
 export function OnboardingStepList({
   steps,
   statuses,
+  roleLabels,
   renderStepExtra,
   className,
 }: OnboardingStepListProps) {
@@ -55,6 +57,11 @@ export function OnboardingStepList({
                 )}
               >
                 {step.instruction}
+                {step.role && roleLabels?.[step.role] && (
+                  <span className="ml-2 inline-flex rounded-full bg-muted px-1.5 py-0.5 align-middle text-[10px] font-medium text-muted-foreground">
+                    {roleLabels[step.role]}
+                  </span>
+                )}
               </p>
             </div>
             {extra && <div className="pl-[30px]">{extra}</div>}

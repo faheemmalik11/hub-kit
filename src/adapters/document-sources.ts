@@ -134,6 +134,8 @@ export interface DocumentSource {
    */
   secondaryItems?: string[];
   secondaryItemsLabel?: string;
+  /** Unset keeps the plain chip; "default" is plain text; "warn"/"danger" is a colored chip. */
+  secondaryTone?: "default" | "warn" | "danger";
   /** Whose folder the second row names, when it is not the card's own provider. */
   secondaryIcon?: SourceIcon;
   runs?: SourceRun[];

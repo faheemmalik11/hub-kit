@@ -450,19 +450,38 @@ function SourceRow({
                 {source.secondaryItemsLabel}
               </span>
             )}
-            {source.secondaryItems.map((item) => (
-              // The row wraps, so a filing destination gets the width it needs and only
-              // truncates once it outgrows the card. A folder name cut to "Antonius Apotheke
-              // Doc..." names nothing, and this row carries one chip where the row above carries
-              // many.
-              <span
-                key={item}
-                title={item}
-                className="max-w-full truncate rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-xs text-foreground"
-              >
-                {item}
-              </span>
-            ))}
+            {source.secondaryItems.map((item) =>
+              source.secondaryTone === undefined ? (
+                // The row wraps, so a filing destination gets the width it needs and only
+                // truncates once it outgrows the card. A folder name cut to "Antonius Apotheke
+                // Doc..." names nothing, and this row carries one chip where the row above
+                // carries many.
+                <span
+                  key={item}
+                  title={item}
+                  className="max-w-full truncate rounded-md border border-border bg-muted/60 px-1.5 py-0.5 text-xs text-foreground"
+                >
+                  {item}
+                </span>
+              ) : source.secondaryTone === "default" ? (
+                <span key={item} className="truncate text-xs text-muted-foreground">
+                  {item}
+                </span>
+              ) : (
+                <span
+                  key={item}
+                  title={item}
+                  className={cn(
+                    "max-w-full truncate rounded-md border px-1.5 py-0.5 text-xs",
+                    source.secondaryTone === "danger"
+                      ? "border-danger/30 bg-danger-soft text-danger"
+                      : "border-warning/30 bg-warning-soft text-warning",
+                  )}
+                >
+                  {item}
+                </span>
+              ),
+            )}
           </div>
         )}
         <RunRequestLine request={source.runRequest} labels={labels} />

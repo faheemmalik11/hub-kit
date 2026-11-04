@@ -112,10 +112,6 @@ export function OnboardingHighlight({
     measuredCardHeight,
     topObstruction,
   );
-  // The ring has to show the real target even when the card is docked and claims most of the
-  // screen for itself: the room reserved for a docked card is a limit on the CARD, not on the
-  // target. A target sitting where the card wants to go (the common reason docking gets picked in
-  // the first place) used to get its ring clipped down to nothing.
   const spotlight = spotlightBox(rect, spotlightScreenBand(visibleArea, topObstruction));
   const card = (
     <OnboardingLearningCard

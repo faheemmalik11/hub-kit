@@ -228,7 +228,10 @@ export function stickyBarBottomAboveSpotlight(overlayRoot: HTMLElement | null): 
     while (node && node !== document.body) {
       const position = getComputedStyle(node).position;
       if (position === "sticky" || position === "fixed") {
-        return Math.ceil(node.getBoundingClientRect().bottom);
+        const rect = node.getBoundingClientRect();
+        if (rect.bottom < area.top + area.height) {
+          return Math.ceil(rect.bottom);
+        }
       }
       node = node.parentElement;
     }

@@ -15,6 +15,8 @@ export { OnboardingLearningCard } from "./onboarding-learning-card";
 export type { OnboardingLearningCardProps } from "./onboarding-learning-card";
 export { OnboardingPracticeModeBanner } from "./onboarding-practice-mode-banner";
 export type { OnboardingPracticeModeBannerProps } from "./onboarding-practice-mode-banner";
+export { OnboardingCompletionModal } from "./onboarding-completion-modal";
+export type { OnboardingCompletionModalLabels } from "./onboarding-completion-modal";
 export {
   englishOnboardingHighlightLabels,
   type OnboardingHighlightLabels,

@@ -126,7 +126,7 @@ export function OnboardingHighlight({
   );
 
   return (
-    <div ref={overlayRoot} className="pointer-events-none fixed inset-0 z-50" role="presentation">
+    <div ref={overlayRoot} className="pointer-events-none fixed inset-0 z-[55]" role="presentation">
       <div
         className="pointer-events-none absolute"
         style={{

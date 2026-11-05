@@ -49,7 +49,7 @@ export function OnboardingLearningCard({
             onClick={onCompleteInfoStep}
             className="h-7 rounded-lg bg-[var(--tour-accent,var(--primary))] px-3.5 text-[12px] sm:h-8 sm:px-5 sm:text-sm"
           >
-            {labels.nextButton}
+            {stepIndex === stepCount - 1 ? (labels.finishButton ?? labels.nextButton) : labels.nextButton}
           </Button>
         </div>
       ) : (

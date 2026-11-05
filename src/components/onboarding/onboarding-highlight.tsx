@@ -100,6 +100,33 @@ export function OnboardingHighlight({
     }
   }, []);
 
+  if (!isFinished && !target) {
+    if (stepPath && !pathname.startsWith(stepPath)) {
+      return null;
+    }
+    return (
+      <div
+        className="pointer-events-none fixed inset-0 z-[55] flex items-center justify-center p-4"
+        role="presentation"
+      >
+        <div className="pointer-events-none absolute inset-0 bg-[var(--onboarding-dim,rgb(0_0_0/0.5))]" />
+        <div
+          data-tour-card=""
+          className="pointer-events-auto relative w-[min(var(--tour-card-width,22rem),calc(100vw-2rem))] rounded-2xl border-2 border-[var(--tour-accent,var(--primary))] bg-popover px-4 pt-4 pb-2.5 text-popover-foreground shadow-2xl ring-4 ring-[var(--tour-accent,var(--primary))]/20 sm:px-5 sm:pt-5 sm:pb-3.5"
+        >
+          <OnboardingLearningCard
+            step={currentStep}
+            stepIndex={currentStepIndex}
+            stepCount={task.steps.length}
+            labels={labels}
+            showHelp={runner.showHelp}
+            onCompleteInfoStep={completeInfoStep}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (!showSpotlight || !rect) {
     return null;
   }

@@ -47,7 +47,7 @@ export function OnboardingTaskPanel({
   onClose,
   onRestart,
 }: OnboardingTaskPanelProps) {
-  const { task, currentStep, stepStatuses, isFinished, showHelp, completeInfoStep, restart } = runner;
+  const { task, currentStep, stepStatuses, isFinished, showHelp, restart } = runner;
   const completedCount = stepStatuses.filter((status) => status === "done").length;
   const target = isFinished ? null : currentStep.target;
   const stepPath = isFinished ? null : (currentStep.path ?? null);
@@ -124,7 +124,7 @@ export function OnboardingTaskPanel({
         className,
       )}
     >
-      <div className="flex items-center gap-3 bg-[var(--tour-accent,var(--primary))] px-4 py-3 text-primary-foreground">
+      <div className="flex shrink-0 items-center gap-3 bg-[var(--tour-accent,var(--primary))] px-4 py-3 text-primary-foreground">
         <div className="relative shrink-0 rounded-full bg-card p-0.5">
           <ProgressRing completed={completedCount} total={task.steps.length} size={44} strokeWidth={4} />
           <span className="absolute inset-0 grid place-items-center text-[10px] font-bold text-foreground tabular-nums">
@@ -140,7 +140,7 @@ export function OnboardingTaskPanel({
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 p-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4 p-4">
       {isFinished && (
         <div className="rounded-lg bg-emerald-50 p-3 text-sm font-medium text-emerald-700">
           {labels.finishedTitle}
@@ -177,22 +177,17 @@ export function OnboardingTaskPanel({
         </div>
       )}
 
-      {!isFinished && !onWrongPage && !targetOffScreen && (currentStep.type === "info" || (showHelp && currentStep.helpText)) && (
+      {!isFinished && !onWrongPage && !targetOffScreen && showHelp && currentStep.helpText && (
         <div className="rounded-lg bg-muted/40 p-3">
-          {showHelp && currentStep.helpText && (
-            <p className="text-sm text-muted-foreground">{currentStep.helpText}</p>
-          )}
-          {currentStep.type === "info" && (
-            <Button size="sm" className="mt-3" onClick={completeInfoStep}>
-              {labels.nextButton}
-            </Button>
-          )}
+          <p className="text-sm text-muted-foreground">{currentStep.helpText}</p>
         </div>
       )}
 
-      <OnboardingStepList steps={task.steps} statuses={stepStatuses} roleLabels={roleLabels} renderStepExtra={renderStepExtra} />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <OnboardingStepList steps={task.steps} statuses={stepStatuses} roleLabels={roleLabels} renderStepExtra={renderStepExtra} />
+      </div>
 
-      <div className="flex gap-2">
+      <div className="flex shrink-0 gap-2">
         <Button
           variant="outline"
           size="sm"

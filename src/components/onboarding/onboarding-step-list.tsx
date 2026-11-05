@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import type { ReactNode } from "react";
+import { Fragment, type ReactNode } from "react";
 
 import { cn } from "../../lib/class-names";
 import type { OnboardingStep, OnboardingStepStatus } from "../../lib/onboarding";
@@ -30,9 +30,18 @@ export function OnboardingStepList({
       {steps.map((step, index) => {
         const status = statuses[index];
         const extra = renderStepExtra?.(step, index, status);
+        const startsGroup = Boolean(step.group) && step.group !== steps[index - 1]?.group;
         return (
+          <Fragment key={step.id}>
+            {startsGroup && (
+              <li
+                aria-hidden
+                className="border-t border-border pt-3 text-sm font-bold text-foreground"
+              >
+                {step.group}
+              </li>
+            )}
           <li
-            key={step.id}
             className={cn(
               "flex flex-col gap-2",
               status === "active" &&
@@ -66,6 +75,7 @@ export function OnboardingStepList({
             </div>
             {extra && <div className="pl-[30px]">{extra}</div>}
           </li>
+          </Fragment>
         );
       })}
     </ol>

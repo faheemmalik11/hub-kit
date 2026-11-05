@@ -3,6 +3,7 @@ export interface OnboardingHighlightLabels {
   waiting: string;
   outcomeTitle: string;
   nextButton: string;
+  finishButton?: string;
   goToPage: (pageLabel: string) => string;
   goToPageButton: string;
   scrollToTarget: string;
